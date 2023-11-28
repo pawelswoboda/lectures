@@ -1,0 +1,238 @@
+\section{MAP-inference}
+\begin{frame}{Motivation, Definition}
+    \begin{definition}[MAP-inference]
+       The Maximum-A-Posteriori (MAP)-inference problem given a Gibbs distribution is
+       \begin{equation}
+        x^{map} \in \argmax_x \Pb_{\Phi}(x)\,.
+       \end{equation}
+    \end{definition}
+    \pause
+    The MAP-inference problem can be equivalently reformulated as
+    \begin{equation}
+        \begin{aligned}
+        x^{map}  
+        \in & \argmax_{x} \frac{1}{Z} \tilde{\Pb}_{\Phi}[x] 
+        \pause = \argmax_{x} \tilde{\Pb}_{\Phi}[x] \\
+        \pause = & \underbrace{\argmax_{x} \prod_{\phi \in \Phi}\phi(x_{\Scope[\phi]})}_{\text{max-product}} \\
+        \pause = & \underbrace{\argmin_{x} \sum_{\phi \in \Phi} -\log(\phi(x_{\Scope[\phi]}))}_{\text{min-sum}}\,,
+        \end{aligned}
+    \end{equation}
+    \begin{itemize}
+        \pause \item Optimizing min-sum, i.e. operating in log-space is numerically better.
+        \pause \item Min-sum is also called energy minimization.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Max-Product Variable Elimination}
+\textbf{Idea:}
+\begin{itemize}
+    \item \underline{Goal:} Adapt the sum-product variable elimination Algorithm~\ref{alg:sum-product-variable-elimination} to compute the MAP-inference problem.
+    \pause \item \underline{Technique:} Replace summation by maximization.
+\end{itemize}
+\pause
+\begin{definition}[Factor Maximization]
+    Let $X$ be a set of variables and $Y \notin X$ a variable. Let $\phi(X,Y)$ be a factor. The factor maximization of $Y$ in $\phi$ over $X$ as
+    \begin{equation}
+        \psi(X) = \max_{Y} \phi(X,Y)\,.
+    \end{equation}
+\end{definition}
+\pause
+\textbf{Sum-Product Analogies:}
+\begin{itemize}
+    \item \underline{Exchanging max and $\cdot$:} Exactly as for sum-product variable elimination the order of taking max and product over factors can be changed in scopes allow for it.
+    \pause \item \underline{Push-in Max:} Given $\phi_1,\phi_2$ and $X \notin \Scope[\phi_1]$ then
+    \begin{equation}
+        \max_X (\phi_1 \cdot \phi_2) = \phi_1 \cdot \max_X \phi_2\,.
+    \end{equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Max-Marginal}
+    \begin{itemize}
+        \item Define analogue of marginals for min-sum or max-prod case.
+    \end{itemize}
+    \pause
+\begin{definition}[Max-Marginals]
+   The max-marginal of a function $f$ w.r.t.\ variables $Y$ is 
+   \begin{equation}
+    \maxmarg_{f}(y) = \max_{\xi_{Y} = y} f(Y)\,.
+   \end{equation}
+\end{definition}
+    \pause
+\begin{example}
+    The max-marginal $\maxmarg_{\tilde{\Pb}_{\Phi}}(x_i)$ for any $x_i \in \Val(X_i)$ is the unormalized probability value for each assignment over all $X$ such that $X_i = x_i$.
+    When
+    \\
+\end{example}
+    \begin{itemize}
+        \pause \item Max-prod variant of variable elimination will produce max-marginals.
+        \pause \item How to decode a global MAP-assignment from max-marginals?
+        \end{itemize}
+\end{frame}
+
+\begin{frame}{Max-Product Variable Elimination}
+    \textbf{Additional considerations for variable elimination MAP-inference:}
+    \begin{itemize}
+        \item It is not enough to only compute max-marginals for each variable and then independently choose states that attain them.
+        \begin{itemize}
+            \pause \item Consider $\phi = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$. All max-marginals are $1$, but the assignments $x = (0,0)$ and $x = (1,1)$ are not MAP-assignments.
+        \end{itemize}
+        \pause \item MAP-assignments can be computed by iteratively decoding states that attain max-marginals based on previously set states.
+    \end{itemize}
+    \pause
+    \begin{algorithm}[H]
+       \caption{Max-Product Variable Elimination}
+        \label{alg:max-product-variable-elimination}
+        \KwInput{
+            Factors $\Phi$,
+            variable order $\prec$
+            }
+            \tcp{Max-Product}
+            \For{$i=1,\ldots,k$}{
+                $\Phi' \leftarrow \{ \phi \in \Phi: Z_i \in \Scope[\phi]\}$\;
+                $\Phi'' \leftarrow \Phi \backslash \Phi'$\;
+                $\psi_i \leftarrow \prod_{\phi \in \Phi'} \phi$\;
+                $\tau_i \leftarrow \max_{Z_i} \psi_i$\;
+                $\Phi \leftarrow \Phi'' \cup \{\tau_i\}$\;
+            }
+            \pause
+            \tcp{Traceback MAP}
+            \For{$i=n,\ldots,1$}{
+                $x^*_i \leftarrow \argmax_{x_i} \psi_i(x_i, x^*_{\Scope[\psi] \backslash \{i\}})$\;
+            }
+            \KwOutput{$x^*$, $\Phi$}
+    \end{algorithm}
+\end{frame}
+
+\begin{frame}{Clique-Tree Max-Product}
+    \textbf{Idea:}
+    \begin{itemize}
+        \item Similarly as for VE: Change sum-prod to max-prod.
+        \begin{itemize}
+            \pause \item Compute max-marginals for all variables simultaneously.
+            \pause \item Use messages instead of creating new potentials.
+        \end{itemize} 
+    \end{itemize}
+
+    \begin{algorithm}[H]
+        \label{alg:clique-tree-max-prod}
+        \caption{Upward Pass Clique Tree VE}
+        \KwInput{$\Phi$, $T$, root clique $C_r$}
+        \pause
+        \tcp{Initialize Cliques}
+        \For{$C \in T$}{
+            $\psi_C \leftarrow \prod_{\phi: \xi(\phi) = i} \phi$\;
+        }
+        \pause
+        \While{not done}{
+        \tcp{Choose clique tree nodes and messages as in clique-tree SP}
+        Choose $i in V_T$ and $ij \in E_T$\;
+        \pause
+            $\delta_{i \rightarrow j}(S_{i j}) \leftarrow \max_{C_i \setminus S_{ij}} \psi_{C_i} \cdot \prod_{k \in \Nb(i) \backslash \{j\}} \delta_{k \rightarrow i}$\;
+        }
+        \tcp{Compute beliefs}
+        \For{$i \in V_T$}{
+            $\beta_i = \psi_i \prod_{j \in \Nb(i)} \delta_{j \rightarrow i}$\;
+        }
+        \end{algorithm}
+        \pause
+        \begin{proposition}
+            After a run of Algorithm~\ref{alg:clique-tree-max-prod} the beliefs $\beta_i$ are max-marginals, i.e.\ for any assignment $c_i$ we have
+            \begin{equation}
+                \beta_i(c_i) = \maxmarg_{\tilde{\Pb}_{\Phi}}(c_i)\,.
+            \end{equation}
+        \end{proposition}
+\end{frame}
+
+\begin{frame}{Max-Calibration, Reparametrization}
+    \begin{definition}[Max-Calibration]
+        Beliefs $\beta$ and sepset beliefs $\mu_{ij}$ of a clique tree are max-calibrated if
+        \begin{equation}
+            \max_{C_i \backslash S_{ij}} \beta_i = \max_{C_j \backslash S_{ij}} \beta_j = \mu_{ij}(S_{ij})\,.
+        \end{equation}
+    \end{definition}
+    \pause
+    \begin{proposition}
+        The beliefs in a clique tree after running Algorithm~\ref{alg:clique-tree-max-prod} are max-calibrated.
+    \end{proposition}
+    \pause
+    \begin{itemize}
+        \item Set $\mu_{ij} = \delta_{i \rightarrow j} \cdot \delta_{j \rightarrow i}$ as for the sum-prod case. Recall the clique tree measure
+        \begin{equation}
+            Q_T = \frac{\prod_i \beta_i}{\prod_{ij} \mu_{ij}}
+        \end{equation}
+    \end{itemize}
+    \pause
+    \begin{proposition}[Reparametrization]
+        During the execution of Algorithm~\ref{alg:clique-tree-max-prod} it holds that the clique tree measure is equal to the Gibbs distribution, i.e.\ $Q_T = \tilde{\Pb}_{\Phi}$.
+    \end{proposition}
+    \pause
+    \begin{corollary}
+       Let $\beta$ and $\mu$ be the max-calibrated beliefs after executing Algorithm~\ref{alg:clique-tree-max-prod} and let $Q_T$ be the resulting clique tree measure. Then $Q_T$ is a representative of $\tilde{\Pb}_{\Phi}$ that satisfies max-calibration.
+    \end{corollary}
+\end{frame}
+
+\begin{frame}{Loopy Max-Product Beliefs Propagation}
+\begin{itemize}
+    \item \underline{Idea:} Analoguous as Sum-Product Belief Propagation.
+    \begin{itemize}
+        \pause \item Change sum-prod to max-prod.
+    \end{itemize} 
+    \pause \item \underline{Decoding:} Given (approximate) max-marginals, how to choose consistent MAP-assignment estimate?
+    \begin{itemize}
+        \pause \item In particular, if multiple states attain the same max-marginal, how to choose between them?
+        \pause \item Sequential approach: Iteratively decode variable one-by-one, choose maximizing state when conditioning on previously selected partial assignment.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{MAP as Integer Linear Program}
+\begin{itemize}
+    \item \underline{Optimization:} We will, as for sum-product message passing, introduce an optimization formulation for MAP-inference.
+    \item The difficulty for MAP-inference will not come from an intractable objective (it remains linear), but from describing the set of potential variable assignments.
+\end{itemize}
+Recall the min-sum formulation of MAP-inference:
+\begin{equation}
+    \min_{x} \sum_{\phi \in \Phi} -\log(\phi(x_{\Scope[\phi]}))\,.
+\end{equation}
+\begin{itemize}
+    \pause \item Variables $x_i$ can take values in $\Val(X_i)$.
+\begin{itemize}
+    \pause \item Reformulate as variables $q_i(x_i) \in \{0,1\}$ that indicate whether $X_i$ is assigned to $x_i$ or not.
+    \pause \item Add constraint $\sum_{x_i \in \Val(X_i)} q_i(x_i) = 1$, meaning variable $X_i$ is assigned to exactly one state.
+\end{itemize}
+\item Similar for scopes of factors:
+\begin{itemize}
+    \pause \item Add $q_{\phi}(x_{\Scope[\phi]}) \in \{0,1\}$ that indicate whether $X_{\Scope[\phi]}$ is assigned to $x_{\Scope[\phi]}$ or not.
+    \pause \item Add constraint $\sum_{x_{\Scope[phi]} \in \prod_{i \in \Scope[\phi]}\Val(X_i)} q_{\phi}(x_{\Scope[\phi]}) = 1$.
+    \pause Add marginalization constraints
+    \begin{equation}
+        q_i(x_i) = \sum_{x' \in \prod_{i \in \Scope[\phi]} \Val(X_i) : x'_i = x_i} q_{\phi}(x')
+    \end{equation}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Linear Program Relaxation}
+    \begin{itemize}
+        \item \underline{Problem:} ILPs are NP-hard to solve.
+        \pause \item \underline{Computational Approach:} Relax integrality constraints to box-constraints.
+    \end{itemize}
+\pause
+The overall LP-relaxation is given by
+\begin{equation}
+    \begin{aligned}
+    \min_{q_i, q_{\phi}} \ & \sum_{\phi \in \Phi} - \la \log( \phi ), q_{\phi} \ra \\
+    \text{s.t. } 
+    & \sum_{x_{\Scope[\phi]} \in \prod_{i \in \Scope[\phi]}\Val(X_i)} q_{\phi}(x_{\Scope[\phi]}) = 1 \\
+    & \sum_{x_i \in \Val(X_i)} q_{i}(x_{i}) = 1 \\
+    & q_i(x_i) = \sum_{x' \in \prod_{i \in \Scope[\phi]} \Val(X_i) : x'_i = x_i} q_{\phi}(x') \\
+    & q_i \geq 0, q_{\phi} \geq 0
+    \end{aligned}
+\end{equation}
+\begin{itemize}
+    \pause \item LP-problems can be efficiently solved.
+    \pause \item But are not equivalent to the ILP problem, i.e.\ $q \in [0,1]$ possible.
+    \pause \item Better relaxations possible by adding more clusters and marginalizing over higher-order interactions.
+\end{itemize}
+\end{frame}

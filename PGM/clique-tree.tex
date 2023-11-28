@@ -1,0 +1,495 @@
+\subsection{Cluster Graph \& Clique Tree}
+
+\begin{frame}{Cluster Graph}
+%\begin{itemize}
+%\item We can interpret variable elimination Algorithm~\ref{alg:sum-product-variable-elimination} as working on the clique tree (set of maximal cliques), see slide~\ref{slide:induced-graph}.
+%\pause \item This reinterpretation will be a starting point for non-exact inference algorithms. 
+%\begin{itemize}
+%    \pause \item Use when variable elimination would be too expensive (induced width $w_{H,\prec}$ too large).
+%\end{itemize}
+%\end{itemize}
+%\pause
+\begin{definition}[Cluster Graph]
+   A cluster graph $U$ for a set of factors $\Phi$ is an undirected graph with nodes corresponding to subsets $C_i \subset \mathcal{X}$.
+   A cluster graph must be family-preserving: For each factor $\phi \in \Phi$ there must exist $C_i$ such that $\Scope[\phi] \subseteq C_i$. 
+   Each edge between clusters $C_i$ and $C_j$ is associated with a set of variables $S_{ij} = C_i \cap C_j$ (see below for details).
+\end{definition}
+\pause
+\begin{example}[Cluster Graph Examples]
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Graph:
+\begin{tikzpicture}[baseline={(B.base)}]
+\node[rand_var] (A) at (0,1) {A};
+\node[rand_var] (B) at (-1,0) {B};
+\node[rand_var] (C) at (1,0) {C};
+\node[rand_var] (D) at (0,-1) {D};
+\draw (A) to (B);
+\draw (A) to (C);
+\draw (D) to (B);
+\draw (D) to (C);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+\hfill\vrule\hfill
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Cluster graph:
+\begin{tikzpicture}[baseline={(AB.base)}]
+        \node[rand_var] (AB) at (-0.75,0.75) {AB};
+        \node[rand_var] (AC) at (0.75,0.75) {AC};
+        \node[rand_var] (BD) at (-0.75,-0.75) {BD};
+        \node[rand_var] (CD) at (0.75,-0.75) {CD};
+        \draw (AB) to node[above] {A} (AC);
+        \draw (AB) to node[left] (B) {B} (BD);
+        \draw (CD) to node[below] {D} (BD);
+        \draw (CD) to node[right] {C} (AC);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+\hfill\vrule\hfill
+\begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+Trivial Cluster Graph:
+\vspace{1cm}\\
+\begin{tikzpicture}[baseline={(ABCD.base)}]
+    \node[rand_var] (ABCD) at (0,0) {ABCD};
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+\hfill\vrule\hfill
+\begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+Cluster Graph Tree:
+\vspace{1cm}\\
+\begin{tikzpicture}[baseline={(ABD.base)}]
+    \node[rand_var] (ABD) at (0,0) {ABD};
+    \node[rand_var] (ACD) at (2,0) {ACD};
+    \draw (ABD) to node[below] {AD} (ACD);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\end{example}
+
+\begin{itemize}
+\pause \item We will study the cluster graphs arising from variable elimination.
+\begin{itemize}
+    \pause \item These will have several interesting properties, i.e.\ the running intersection property, chordality, and separation.
+\end{itemize}
+\pause \item Additionally, the cluster graphs arising from variable elimination will allow us to formulate VE purely in graph theoretical terms.
+\begin{itemize}
+    \pause \item This will be useful for better VE and later extensions to approximate inference.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Cluster Graph of Variable Elimination}
+\begin{definition}[VE Cluster Graph]
+    The cluster graph of VE is defined as follows: its node are subsets $C = 
+    \Scope[\psi]$ of factors $\psi$ in Algorithm \ref{alg:sum-product-variable-elimination}.
+    An edge is added between clusters $C_i$ and $C_j$ corresponding to factors $\psi_i$ and $\psi_j$ if $\tau_i$ (elimination of $\psi_i$) is used in the computation of $\tau_j$.
+    The edge set is $S_{ij} = C_i \cap C_j$.
+\end{definition}
+\pause
+\begin{theorem}[VE Cluster Graph is a Tree]
+\label{thm:ve-cluster-graph-tree}
+    The VE cluster graph is a tree, i.e.\ it has no cycles.
+\end{theorem}
+\pause
+\begin{proof}
+    Each factor $\tau$ is used once in the computation of any later $\tau'$, since it is folded into $\psi'$ and then eliminated.
+\pause
+Therefore every cluster has exactly one outgoing arc (when making the cluster graph directed), hence no cycles can be present.
+\end{proof}
+\pause
+\hrule
+\begin{columns}[T]
+\column{0.05\textwidth}
+\vspace{0.3cm}
+\ \ \ C $\prec$ D $\prec$ I $\prec$ H $\prec$ G $\prec$ S $\prec$ L
+\column{0.4\textwidth}
+\begin{center}
+    \begin{tikzpicture}[scale=0.5]
+        \node[rand_var] (C) at (-1, 5) {C};
+        \node[rand_var] (D) at (-1, 4) {D};
+        \node[rand_var] (G) at (0, 3) {G};
+        \node[rand_var] (I) at (1, 4) {I};
+        \node[rand_var] (L) at (0, 2) {L};
+        \node[rand_var] (H) at (-1, 1) {H};
+        \node[rand_var] (S) at (1, 1) {S};
+        \node[rand_var] (J) at (2, 3) {J};
+        \draw (C) to (D);
+        \draw (D) to (G);
+        \draw (D) to (I);
+        \draw (I) to (G);
+        \draw (I) to (J);
+        \draw (G) to (J);
+        \draw (J) to (S);
+        \draw (G) to (L);
+        \draw[bend left=15] (G) to (S);
+        \draw (L) to (S);
+        \draw (L) to (J);
+        \draw (S) to (H);
+        \draw[bend right=15] (G) to (H);
+        \pause 
+        \filldraw[fill=blue!70, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(C.north west) (D.south west) (D.south east) (C.north east)};
+        \pause 
+        \filldraw[fill=green!70, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(D.north west) (G.south) (I.north east)};
+        \pause 
+        \filldraw[fill=orange!70, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(I.north) (G.south west) (J.south east)};
+        \pause 
+        \filldraw[fill=red!50, nearly transparent, tension=0.7, even odd rule] plot[smooth cycle] coordinates {(H.south west) (S.east) (G.north)} (L) circle (0.55cm);
+        \pause 
+        \filldraw[fill=brown!50, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(G.north west) (L.south west) (S.south) (J.east) };
+        \pause 
+        \filldraw[fill=gray!70, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(S.south) (L.west) (J.north east)};
+        \pause 
+        \filldraw[fill=black!70, nearly transparent, tension=0.7] plot[smooth cycle] coordinates {(L.south) (J.south) (J.north) (L.north)};
+    \end{tikzpicture}
+\end{center}
+\column{0.55\textwidth}
+\begin{center}
+\begin{tikzpicture}[scale=1.2]
+    \only<6->{\node [rand_var] (CD) at (-2.4, 0.7) {CD};}
+	\only<7->{\node [rand_var] (DIG) at (-1.2, 0.7) {DIG};}
+	\only<8->{\node [rand_var] (GIJ) at (0, 0.7) {GIJ};}
+	\only<9->{\node [rand_var] (GHS) at (0, -0.7) {GHS};}
+    \only<10->{\node [rand_var] (GJLS) at (0, 0) {GJLS};}
+	\only<11->{\node [rand_var] (JLS) at (1.2, 0) {JLS};}
+	\only<12->{\node [rand_var] (JL) at (2.4, 0) {JL};}
+	\only<7->{\draw (CD) to node[below] {$\rightarrow$} node[above] {$D$} (DIG);}
+	\only<8->{\draw (DIG) to node[below] {$\rightarrow$} node[above] {$GI$} (GIJ);}
+	\only<10->{\draw (GIJ) to node[left] {$\downarrow$} node[right] {$GJ$} (GJLS);}
+	\only<10->{\draw (GJLS) to node[left] {$\uparrow$} node[right] {$GS$} (GHS);}
+	\only<11->{\draw (GJLS) to node[below] {$\rightarrow$} node[above] {$JLS$} (JLS);}
+	\only<12->{\draw (JLS) to node[below] {$\rightarrow$} node[above] {$JL$} (JL);}
+\end{tikzpicture}
+\end{center}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Running Intersection Property}
+    \begin{definition}[Running Intersection Property]
+        Let $T$ be a cluster tree. 
+        $T$ has the running intersection property if $X \in C_i$ and $X \in C_j$ implies that $X$ is also in every cluster on the unique path in $T$ between $C_i$ and $C_j$.
+    \end{definition}
+%    \begin{itemize}
+%        \pause \item The running intersection property implies $S_{ij} = C_i \cap C_j$ in the cluster graph.
+%    \end{itemize}
+    \pause
+    \begin{theorem}
+        \label{thm:ve-cluster-tree-rip}
+        Let $T$ be a VE cluster tree. Then $T$ satisfies the running intersection property.
+    \end{theorem}
+    \pause
+    \begin{proof}
+        Let $C$ and $C'$ be two clusters containing $X$.
+        Let $C_X$ be the cluster where $X$ is eliminated.\\
+        \pause 
+        \textbf{Claim:}~$X$ is in every cluster on the path from $C$ to $C_X$, same for $C'$ to $C_X$. If $X$ is a query variable we assume $C_X$ is the last cluster.
+        \pause
+        \begin{itemize}
+        \item \underline{Computation of $C_X$ comes later than $C$:} When $X$ is eliminated, all factors involving $X$ are multiplied together and $X$ is summed out.
+        \pause 
+        The result of the summation does not have $X$, so any factors generated after that will not have $X$.
+        \pause \item \underline{$X$ is in the next cluster on the path toward $C_X$:}
+        \pause
+        By assumption $X$ is in $C$ and is not eliminated in $C$.
+        \pause
+        The next cluster $\bar{C}$ must also contain $X$: By definition, it uses $\tau$ in its elimination step, hence will have $X$ in its scope.
+        \pause 
+        The same argument holds true for all clusters on the path from $C$ to $C_X$ by the same reasoning.
+        \pause \item The same reasoning applies for $C'$.
+        \end{itemize}
+    \end{proof}
+\end{frame}
+
+\begin{frame}{Clique Tree Definitions}
+    \begin{definition}[Clique Tree I]
+        \label{def:clique-tree-I}
+    Let $\Phi$ be a set of factors over $\mathcal{X}$.
+    A cluster tree over $\Phi$ that satisfies the running intersection property is called a clique tree.
+    In the case of a clique tree, its clusters are called cliques.
+    \end{definition}
+\pause
+\begin{itemize}
+    \item Clique trees are also called junction tree or join tree.
+\end{itemize}
+\pause
+    \begin{definition}[Clique Tree II]
+        \label{def:clique-tree-II}
+        We say that a tree $T$ is a clique tree for $H$ if
+        \begin{itemize}
+            \item Each node in $T$ corresponds to a clique in $H$ and each maximal clique in $H$ is a node in $T$.
+            \pause \item Define $S_{ij} = C_i \cap C_j$ (called sepset). 
+            Let $W_{<(i,j)}$ be all variables that are on the $C_i$ side of edge $ij$ in $T$, analoguously for $W_{>(ij)}$.
+            Then we require that $S_{ij}$ separates $W_{<(ij)}$ from $W_{>(ij)}$.
+        \end{itemize}
+    \end{definition}
+    \begin{itemize}
+        \pause \item We will prove that for VE cluster trees both definitions are equivalent (See slide~\ref{slide:clique-tree-I-vs-II})
+        \pause \item The running intersection property implies that $C_i \cap C_j$ separates nodes on either side of the graph.
+        \begin{itemize}
+            \pause \item Connection to independence!
+        \end{itemize}
+        \pause \item The induced graph from which the clique tree is built also has another important property: All cycles of length $\geq 4$ contain a shortcut (called chord), which we will see below.
+        \pause \item We will study the relation between chordal graphs and clique trees below.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Chordal Graphs}
+    \begin{definition}[Chordal Graph]
+        Let $X_1 - X_2 - \dots - X_k - X_1$ be a cycle in a graph.
+        A chord is an edge $X_i - X_j$ for two non-consecutive nodes (i.e.\ $|i-j| \geq 2$).
+        A graph is chordal if any cycle of length $\geq 4$ has a chord.
+    \end{definition}
+    \pause
+\begin{minipage}[t]{0.3\textwidth}
+\begin{center}
+    Non-chordal graph:
+\begin{tikzpicture}[scale=0.7, baseline={(5.base)}]
+\foreach \i in {1,...,5} {
+    \node[rand_var] (\i) at ($(\i*360/5:1)$) {\i};
+}
+\draw (1) to (2);
+\draw (2) to (3);
+\draw (3) to (4);
+\draw (4) to (5);
+\draw (5) to (1);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+\begin{minipage}[t]{0.3\textwidth}
+\begin{center}
+    Chordal graph?\\
+    \begin{tikzpicture}[scale=0.7, baseline={(5.base)}]
+\foreach \i in {1,...,5} {
+    \node[rand_var] (\i) at ($(\i*360/5:1)$) {\i};
+}
+\draw (1) to (2);
+\draw (2) to (3);
+\draw (3) to (4);
+\draw (4) to (5);
+\draw (5) to (1);
+\draw (2) to (5);
+\end{tikzpicture}
+\\ \pause
+No.
+\end{center}
+\end{minipage}
+\pause
+\begin{minipage}[t]{0.3\textwidth}
+\begin{center}
+    Chordal graph:\\
+    \begin{tikzpicture}[scale=0.7, baseline={(5.base)}]
+\foreach \i in {1,...,5} {
+    \node[rand_var] (\i) at ($(\i*360/5:1)$) {\i};
+}
+\draw (1) to (2);
+\draw (2) to (3);
+\draw (3) to (4);
+\draw (4) to (5);
+\draw (5) to (1);
+\draw (2) to (5);
+\draw (3) to (5);
+\end{tikzpicture}
+\\ \pause
+Yes.
+\end{center}
+\end{minipage}
+    \pause
+    \begin{theorem}
+        \label{thm:induced-graph-chordal}
+    Every induced graph is chordal
+    \end{theorem}
+    \begin{proof}
+        Assume by contradiction that we have a cycle $X_1 - X_2 - \dots - X_k - X_1$ for $k \geq 4$ that does not have a chord.
+        \pause
+        W.l.o.g.\ assume that $X_1$ is the first eliminated variable.
+        No edge incident on $X_1$ is added after $X_1$ is eliminated, hence $X_1 - X_2$ and $X_1 - X_k$ must exist at that time.
+        \pause
+        Hence, the edge $X_2 - X_k$ will be added at the same time, contradicting our assumption.
+    \end{proof}
+\end{frame}
+    
+\begin{frame}{Chordality $\Rightarrow$ Clique Tree}
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Not chordal:
+\begin{tikzpicture}[scale=0.7, baseline={(B.base)}]
+\node[rand_var] (A) at (0,0.5) {A};
+\node[rand_var] (B) at (-1,0) {B};
+\node[rand_var] (C) at (1,0) {C};
+\node[rand_var] (D) at (0,-0.5) {D};
+\draw (A) to (B);
+\draw (A) to (C);
+\draw (D) to (B);
+\draw (D) to (C);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Cluster graph:
+\begin{tikzpicture}[scale=0.7, baseline={(B.base)}]
+\node[rand_var] (AB) at (-0.75,0.5) {AB};
+\node[rand_var] (AC) at (0.75,0.5) {AC};
+\node[rand_var] (BD) at (-0.75,-0.5) {BD};
+\node[rand_var] (CD) at (0.75,-0.5) {CD};
+\draw (AB) to node[below, yshift=0.05cm] {A} (AC);
+\draw (AB) to node[left] (B) {B} (BD);
+\draw (CD) to node[above,yshift=-0.05cm] {D} (BD);
+\draw (CD) to node[right] {C} (AC);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Chordal:
+\begin{tikzpicture}[scale=0.7, baseline={(B.base)}]
+\node[rand_var] (A) at (0,0.5) {A};
+\node[rand_var] (B) at (-1,0) {B};
+\node[rand_var] (C) at (1,0) {C};
+\node[rand_var] (D) at (0,-0.5) {D};
+\draw (A) to (B);
+\draw (A) to (C);
+\draw (D) to (B);
+\draw (D) to (C);
+\draw (A) to (D);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+\pause
+    \begin{minipage}[t]{0.24\textwidth}
+\begin{center}
+    Cluster tree:
+\begin{tikzpicture}[scale=0.7, baseline={(ABD.base)}]
+\node[rand_var] (ABD) at (-1.25,0) {ABD};
+\node[rand_var] (ACD) at (1.25,0) {ACD};
+\draw (ABD) to node[below] {AC} (ACD);
+\end{tikzpicture}
+\end{center}
+\end{minipage}
+    \pause
+    \begin{theorem}[Chordal Graphs have Clique Trees]
+        \label{thm:chordal-graphs-have-clique-trees}
+    Every chordal graph $H$ has a clique tree $T$ according to Definition~\ref{def:clique-tree-II}.
+    \end{theorem}
+    \pause
+    \begin{proof}
+    We proceed by induction on the number of nodes $n$.
+    \pause
+    The case $n=1$ is trivial.
+    \pause
+    Let $n>1$. If $H$ is a clique, then the theorem holds trivially again.
+    \pause
+    Therefore let us assume there exists $X_1$ and $X_2$ that do not have an edge between them. W.l.o.g.\ $H$ is connected.
+    \pause
+    Let $S$ be a minimal subset of nodes that separates $X_1$ and $X_2$.
+    Removing $S$ from $H$ results into at least two disconnected components $W_2$ and $W_2$ with $X_i \in W_i$.
+    \pause
+    \begin{itemize}
+        \item 
+        \underline{$S$ is a clique:} Let $Z_1, Z_2 \in S$ not be connected via an edge.
+        \pause
+        Due to minimality of $S$ each $Z_i$ must lie on a path between $X_1$ and $X_2$ that does not do through any other node in $S$.
+        \pause
+        Therefore there exists a minimal path between $Z_1$ and $Z_2$ that is entirely in $W_1$ resp.\ $W_2$.
+        \pause
+        The two paths form a cycle of length $\geq 4$ without a chord, which contradicts chordality of $H$.
+    \end{itemize}
+    \end{proof}
+\end{frame}
+
+\begin{frame}{Clique Tree II, Proof cont.}
+\begin{proof}
+    \begin{itemize}
+        \item \underline{Clique tree construction:}
+Consider the induced graph $H_1 = H[W_1 \cup S]$.
+\pause
+$H_1$ is chordal and smaller than $H$, since $X_2 \notin H_1$.
+\pause
+Therefore there exists a clique tree $T_1$ for $H_1$.
+\pause
+Let $C_1$ be a clique in $T_2$ that contains $S$.
+\pause
+Similarly define $H_2$, $T_2$ and $C_2$.
+\pause
+If neither $C_i$ is equal to $S$, we construct a tree $T$ that contains the union of cliques in $T_i$ and connects $C_1$ and $C_2$ via an edge.
+\pause
+Otherwise assume $C_i = S$. Create $T$ by merging $T_1$ without $C_1$ into $T_2$, making all of $C_1$'s neighbors adjacent to $C_2$ instead.
+\pause \item $T$ is a clique tree:
+\pause
+\begin{itemize} \item \underline{All nodes of $T$ are cliques of $H$:}
+There is no clique in $H$ that intersects both $W_1$ and $W_2$, hence any maximal clique in $H$ is a maximal clique in either $H_1$, $H_2$ or both (in the case of $S$).
+\pause
+Hence, all maximal cliques of $H$ appear in $T$ and the nodes of $T$ are cliques of $H$.
+\pause
+\item \underline{$S_{ij}$ separates $W_{<(i,j)}$ from $W_{>(i,j)}$:}
+\pause
+Let $X \in W_{<(i,j)}$ and $Y \in W_{>(i,j)}$.
+\pause
+First, assume that $X,Y \in H_1$. As all the nodes in $H_1$ are on the $T_1$ side of $T$, we also have that $S_{ij} \subset H_1$.
+\pause
+Any path between two nodes in $H_1$ that goes through $H_2$ can be shortcutted to go only through $H_1$.
+\pause
+Thus, if $S_{ij}$ separates $X$ and $Y$, then it also separates them in $H$.
+\pause
+The case $X,Y \in H_2$ is analogous.
+\pause
+Now assume $X \in H_1$ and $Y \in H_2$.
+\pause
+If $S = S_{ij}$ then the result follows from $S$ separating $W_1$ and $W_2$.
+\pause
+Otherwise assume $S_{ij}$ is in $T_1$, on the path from $X$ to $C_1$.
+In this case we have that $S_{ij}$ separates $X$ from $S$, and $S$ separates $S_{ij}$ from $Y$.
+\end{itemize}
+    \end{itemize}
+\end{proof}
+\end{frame}
+
+\begin{frame}{Clique Tree $\Leftrightarrow$ Clique Tree II}
+%    \begin{itemize}
+%    \item Goal: show that the two clique tree definitions are equivalent.
+%    \end{itemize}
+%    \pause
+    \begin{theorem}[Running Intersection Property $\Leftrightarrow$ Separation]
+        \label{thm:rip-separation}
+        Let $\Phi$ be a set of factors, $H$ its associated Markov network and $T$ a cluster tree over $\Phi$.
+        Then $T$ satisfies the running intersection property $\Leftrightarrow$ for every set $S_{ij}$ we have that $W_{<(ij)}$ and $W_{>(ij)}$ are separated by $S_{ij}$ in $H$.
+    \end{theorem}
+\pause
+    \begin{proof}
+        Let $X \in W_{<(ij)}$ and $Y \in W_{>(ij)}$ and let $X_1 - \dots - X_k$ be a path between them.
+        \pause
+        Assume that the path does not intersect $S_{ij}$.
+        \pause
+        We pick randomly a clique for every $X_l, X_{l+1}$ such that $X_l,X_{l+1} \in C_i$.
+        \pause
+        Then the path corresponds to a path in $T$ as follows:
+        For each $X_l - X_{l+1}$ we take the node $C_l$. If $C_l \neq C_{l+1}$ we append the unique path in $T$ between them.
+        \pause
+        Then running intersection property implies that all paths from $C_l$ to $C_{l+1}$ contain $X_{l+1}$, and hence do not pass through $S_{ij}$.
+        Hence, the path is completely in $W_{<(ij)}$, contradicting $Y \in W_{>(ij)}$.
+
+        \pause
+        The reverse direction is left as an exercise
+    \end{proof}
+    \pause
+%    \begin{itemize}
+%        \item We need to show that running intersection implies that each node in $T$ corresponds to a clique in a chordal graph $H'$ containing $H$, and that each maximal clique in $H'$ is represented in $T$. To this end we will show that any clique tree can be used to perform inference.
+%    \end{itemize}
+\begin{itemize}
+\item We have proved so far: 
+\begin{itemize}
+    \item VE Clique Tree $\Rightarrow$ running intersection property $\Leftrightarrow $ Clique tree def.~\ref{def:clique-tree-I}, Separation $\Leftrightarrow$ Clique tree II def.~\ref{def:clique-tree-II}.
+\end{itemize}
+\pause \item Hence for clique trees both definitions are equivalent.
+\end{itemize}
+\end{frame}

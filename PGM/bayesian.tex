@@ -1,0 +1,666 @@
+\section{Bayesian Networks}
+
+\begin{frame}{Bayesian Networks: Introduction}
+    \begin{itemize}
+        \item The probability distribution is factorized according to a directed acyclic graph.
+        \pause \item Conditional independency assumptions hold according to graph topology.
+        \pause \item Sampling can be done efficiently by traversing the graph.
+        \pause \item Representation is more compact than storing a full array if graph is sparse.
+    \end{itemize}
+        \pause
+        \hrule
+        \begin{minipage}[t]{0.49\textwidth}
+        \textbf{Example:} Antique Greek Poleis
+        \begin{center}
+        \begin{tikzpicture}[scale=0.5]
+            \node [rand_var] (0) at (-2, 5) {P: Prosperity};
+            \node [rand_var] (1) at (2, 3) {F: Fighting Spirit};
+            \node [rand_var] (2) at (0, 0) {W: War Success};
+            \node [rand_var] (4) at (0, -2) {E: Everlasting Fame};
+            \node [rand_var] (3) at (-5, 2) {C: Culture};
+            \draw[->] (0) to (3);
+            \draw[->] (0) to (2);
+            \draw[->] (1) to (2);
+            \draw[->] (2) to (4);
+            \draw[->] (0) to (1);
+            \draw[->, bend right=10] (3) to (4);
+        \end{tikzpicture}
+    \end{center}
+\end{minipage}
+    \pause
+    \hfill\vrule\hfill
+        \begin{minipage}[t]{0.49\textwidth}
+            \textbf{Example:} Hidden Markov Model (HMM)
+            \begin{center}
+                \begin{tikzpicture}[scale=0.5]
+                        \node[rand_var] (0) at (-9, 3) {$X_1$};
+                        \node[rand_var] (1) at (-9, 1) {$Y_1$};
+                        \node[rand_var] (2) at (-7, 3) {$X_2$};
+                        \node[rand_var] (3) at (-7, 1) {$Y_2$};
+                        \node[rand_var] (4) at (-5, 3) {$X_3$};
+                        \node[rand_var] (5) at (-5, 1) {$Y_3$};
+                        \node[rand_var] (6) at (-3, 3) {$X_4$};
+                        \node[rand_var] (7) at (-3, 1) {$Y_4$};
+                        \node[rand_var] (8) at (-1, 3) {$X_5$};
+                        \node[rand_var] (9) at (-1, 1) {$Y_5$};
+                        \node[rand_var] (10) at (1, 3) {$X_6$};
+                        \node[rand_var] (11) at (1, 1) {$Y_6$};
+                        \draw[->] (0) to (1);
+                        \draw[->] (0) to (2);
+                        \draw[->] (2) to (4);
+                        \draw[->] (4) to (6);
+                        \draw[->] (6) to (8);
+                        \draw[->] (8) to (10);
+                        \draw[->] (2) to (3);
+                        \draw[->] (4) to (5);
+                        \draw[->] (6) to (7);
+                        \draw[->] (8) to (9);
+                        \draw[->] (10) to (11);
+                \end{tikzpicture}
+            \end{center}
+                \vspace{0.2cm}
+                \begin{itemize}
+                    \pause \item $X_i$ are the true but hidden states of a system.
+                    \pause \item $Y_i$ are the observations (or measurements), from which one can partially infer the states.
+                    \pause \item $X_i$ evolves through time.
+                    \pause \item \textbf{Example:} Speech recognition, Kalman filters, $\ldots$
+                \end{itemize}
+\end{minipage}
+\end{frame}
+
+\subsection{Definitions, I-Map, Factorization}
+\begin{frame}{Definitions: Bayesian Network Structure, I-Map}
+\begin{definition}[Bayesian Network Structure, $\Indep_l$]
+    A Bayesian network structure is a directed acyclic graph $G = (V,A)$ whose nodes represent random variables $X_1,\ldots, X_n$.
+    Let $\Pa{G}{X_i}$ be the parents of $X_i$ in $G$.
+    Let $\ND{G}{X_i}$ be the nodes that are not descendants of $X_i$ in $G$.
+    Then $G$ encodes the following local conditional independence relations:
+    \begin{equation}
+X_i \indep \ND{G}{X_i} \backslash \Pa{G}{X_i} | \Pa{G}{X_i}
+    \end{equation}
+    We call these relations $\Indep_l(G)$.
+\end{definition}
+\pause
+\begin{itemize}
+    \item \textbf{Short:} Each variable is conditionally independent of its non-descendants, given its parents.
+\end{itemize}
+    \pause
+\begin{definition}[Independence of Distribution]
+    Let $\Pb$ be a probability distribution over a set of variables.
+    We define $\Indep(\Pb)$ to be the set of independence relations of the form $X \indep Y | Z$ that hold for $\Pb$.
+\end{definition}
+    \pause
+\begin{definition}[I-map]
+    We say that $G=(V,E)$ is an I-map for a probability distribution $\Pb$ if $\Indep_l(G) \subseteq \Indep(\Pb)$.
+\end{definition}
+\begin{itemize}
+\item Distribution has more independencies than graph
+\item Graph does not mislead independencies in $\Pb$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Factorization}
+    \begin{definition}[Factorization]
+        Let $G$ be an directed graph whose nodes are random variables $X_1,\ldots,X_n$.
+        We say that the corresponding probability distribution $\Pb$ factorizes over $G$ if 
+        \begin{equation}
+            \Pb[X_1,\ldots,X_n] = \prod_{i=1}^n \Pb[X_i | \Pa{G}{X_i}]
+        \end{equation}
+    \end{definition}
+    \pause
+    \begin{definition}[Bayesian Network]
+     A Bayesian network is a pair $B = (G,\Pb)$ such that $\Pb$ factorizes over $G$. 
+     %Given $B$ we write $\Pb_B$ to denote the corresponding probability distribution.
+    \end{definition}
+    \pause
+    \begin{example}[Chain Graph]
+        \begin{tikzpicture}[baseline=(1.base),scale=0.8]
+        \node[rand_var] (1) at (0,0) {$X_1$};
+        \node[rand_var] (2) at (1,0) {$X_2$};
+        \node[rand_var] (3) at (2,0) {$X_3$};
+        \node[rand_var] (4) at (3,0) {$X_4$};
+        \node[rand_var] (5) at (4,0) {$X_5$};
+        \node[rand_var] (6) at (5,0) {$X_6$};
+        \draw[->] (1) to (2);
+        \draw[->] (2) to (3);
+        \draw[->] (3) to (4);
+        \draw[->] (4) to (5);
+        \draw[->] (5) to (6);
+        \end{tikzpicture}
+        factorizes as $\Pb[X_1,\ldots,X_6] = \Pb[X_1] \cdot \Pb[X_2 | X_1] \cdots \Pb[X_6 | X_5]$.
+    \end{example}
+    \pause 
+    \begin{example}[Autoregressive Model]
+\begin{tikzpicture}[baseline=(x1.base),scale=0.4]
+\node[rand_var] (x1) at (0,0) {${X_1}$};
+\node[rand_var] (x2) at (2,0) {${X_2}$};
+\node[inner sep=5pt] (dots) at (4,0) {$\ldots$};
+\node[rand_var] (xk) at (6,0) {${X_k}$};
+\draw[->] (x1) -- (x2);
+\draw[->] (x2) -- (dots);
+\draw[->] (dots) -- (xk);
+\draw[->, bend left=30] (x1) to (xk);
+\draw[->, bend left=20] (x2) to (xk);
+\end{tikzpicture}
+factorizes as
+        $\Pb[X_1,X_2,\ldots,X_k] = \Pb[X_1] \Pb[X_2 | X_1] \cdots \Pb[X_k | X_1,\ldots,X_{k-1}]$
+    \end{example}
+    \end{frame}
+
+\begin{frame}{I-map $\Rightarrow$ Factorization}
+\begin{theorem}
+    Let $G$ be a Bayesian network structure and let $\Pb$ be a probability distribution over the set of nodes of $G$. If $G$ is an I-map for $\Pb$, then $\Pb$ factorizes over $G$ (i.e.\ it is a Bayesian network).
+    \end{theorem}
+    \pause
+    \begin{proof}
+    Let $X_1,\ldots,X_n$ be the random variables ordered topologically w.r.t.\ $G$.
+    \pause
+    Rewrite autoregressively
+    \begin{equation}
+    \Pb[X_1,X_2,\ldots,X_k] = \Pb[X_1] \Pb[X_2 | X_1] \ldots \Pb[X_k | X_1,\ldots,X_{k-1}]
+    \end{equation}
+    \pause
+    As $G$ is an I-map for $\Pb$, we have that
+    \pause
+    $(X_i \indep \ND{G}{X_i} \backslash \Pa{G}{X_i} | \Pa{G}{X_i}) \in \Indep(P)$.
+    \pause
+    By assumption, all parents of $X_i$ are in the set $X_1,\ldots,X_{i-1}$.
+    \pause
+    None of the descendants can possibly be in the same set.
+    \pause
+    Hence, choose $Z \subseteq \ND{G}{X_i}$ such that $Z \cup \Pa{G}{X_i} = \{X_1,\ldots,X_{i-1}\}$.
+    \pause
+    From the local independence for $X_i$ and from decomposition it follows that $(X_i \indep Z | \Pa{G}{X_i})$.
+    \pause
+    Hence, by Bayes rule
+    \begin{equation}
+\Pb[X_i | X_1,\ldots,X_{i-1}]
+%\Pb[X_i | Z, \Pa{G}{X_i}]
+= \frac{\Pb[X_i,Z | \Pa{G}{X_i}]}{\Pb[Z | \Pa{G}{X_i}]}
+\pause
+= \frac{\Pb[X_i | \Pa{G}{X_i}] \Pb[Z | \Pa{G}{X_i}]}{\Pb[Z | \Pa{G}{X_i}]}
+\pause
+= \Pb[X_i | \Pa{G}{X_i}]
+    \end{equation}
+    \pause
+    Rewrite the autoregressive formulation using the above formula.
+    \end{proof}
+    \end{frame}
+
+    \begin{frame}{Factorization $\Rightarrow$ I-map}
+    \begin{theorem}
+    Let $G$ be a Bayesian network structure and let $\Pb$ be a probability distribution over the set of nodes of $G$.
+    If $\Pb$ factorizes over $G$, then $G$ is an I-map for $\Pb$.
+    \end{theorem}
+    \pause
+    First, we need a technical lemma.
+    \begin{lemma}
+        \label{lemma:Bayesian-network-restriction}
+    Let $\Pb$ factorize over a graph $G$. then
+    \begin{equation}
+    \Pb[X_i, \ND{G}{X_i}] = \prod_{j \in \{i\} \cup \ND{G}{X_i}} \Pb[X_j | \Pa{G}{X_j}]
+    \end{equation}
+    \end{lemma}
+    \pause
+    \begin{proof}
+        We proceed by induction.
+        If $\Desc{X_i} \neq \varnothing$, there is necessarily a leaf node $X_j \in \Desc{X_i}$.
+        \pause
+        We use that in the factorization $\Pb[X_1,\ldots,X_n] = \prod_{i} \Pb[X_i | \Pa{G}{X_i}]$ the variable $X_j$ appears exactly once in $\Pb[X_j | \Pa{G}{X_j}]$. 
+        \pause
+        We marginalize $X_j$ out and obtain
+        \begin{equation}
+            \Pb[X_{i \neq j}] = 
+            \pause  \sum_{X_j} \prod_{i \neq j} \Pb[X_i | \Pa{G}{X_i}] \Pb[X_j | \Pa{G}{X_j}]
+            = \pause \prod_{i \neq j} \Pb[X_i | \Pa{G}{X_i}] \,.
+        \end{equation}
+        \pause
+        This solves the induction step.
+    \end{proof}
+    \end{frame}
+
+    \begin{frame}{Factorization $\Rightarrow$ I-map, proof}
+    \begin{proof}[Factorization $\rightarrow$ I-Map]
+    Let $\Pb$ be a distribution that factorizes according to $G$.
+    We need to show that $\Indep_l(G)$ holds in $\Pb$.
+    \pause
+    Let $(X_i \indep \ND{G}{X_i} \backslash \Pa{G}{X_i}| \Pa{G}{X_i})$ be an independence relation in $G$.
+    \pause
+    To prove that it holds for $\Pb$, we need to show that
+    \begin{equation}
+        \Pb[X_i | \ND{G}{X_i} ] = \Pb[X_i | \Pa{G}{X_i}] 
+    \end{equation}
+    \pause
+    First, let us assume that $X_i$ is a leave node (i.e.\ has no descendants).
+    Then 
+    \begin{equation}
+        \label{eq:def-xi-nd}
+        \Pb[X_{j \neq i}] = \pause \sum_{X_i} \prod_{j \neq i}\Pb[X_j| \ND{G}{X_j}] \Pb[X_i | \Pa{G}{X_i}] = \pause \prod_{j \neq i}\Pb[X_j| \ND{G}{X_j}]\,.
+    \end{equation}
+    \pause
+    Hence,
+    \begin{equation}
+    \Pb[X_i | \ND{G}{X_i}] = \frac{\Pb[X_i | \Pa{G}{X_i}] \prod_{j \neq i}\Pb[X_j| \ND{G}{X_j}]}{\prod_{j \neq i} \Pb[X_j| \ND{G}{X_j}] } = \Pb[X_i | \Pa{G}{X_i}] 
+    \end{equation}
+
+    \pause
+    In the general case when $X_i$ is not a leave node, we apply the lemma to marginalize out all $X \in \Desc{X_i}$ and follow the reasoning in the leave case.
+\end{proof}
+\end{frame}
+
+\subsection{D-Separation}
+\begin{frame}{D-Separation, Elementary Examples}
+\begin{center}
+\textbf{When does $X \indep Y | Z$ hold given in a BN?}
+\end{center}
+\pause
+\hrule
+\begin{minipage}[t]{0.3\textwidth}
+\textbf{Direct Effect:}
+        \begin{tikzpicture}[baseline=(0.base)]
+            \node[rand_var] (0) at (-1, 0) {$X$};
+            \node[rand_var] (1) at (0, 0) {$Y$};
+            \draw[->] (0) to (1);
+        \end{tikzpicture}
+        \begin{itemize}
+        \item $X \indep Y$? \pause No 
+        \end{itemize}
+    \end{minipage}
+    \hfill\vrule\hfill
+    \begin{minipage}[t]{0.69\textwidth}
+\pause \textbf{Indirect Effect, Causal Chain:}
+        \begin{tikzpicture}[baseline=(0.base)]
+            \node[rand_var] (0) at (-1, 0) {$X$};
+            \node[rand_var] (1) at (0, 0) {$Z$};
+            \node[rand_var] (2) at (1, 0) {$Y$};
+            \draw[->] (0) to (1);
+            \draw[->] (1) to (2);
+        \end{tikzpicture}
+        \begin{itemize}
+        \item $X\indep Y$? \pause No 
+        \pause \item $X \indep Y | Z$? \pause Yes
+        \end{itemize}
+        \pause
+        \begin{equation}
+        \Pb[Y|X,Z] = \frac{\Pb[X,Y,Z]}{\Pb[X,Z]} = \frac{\Pb[X] \Pb[Z|X] \Pb[Y|Z]}{\Pb[X]\Pb[Z|X]} = \Pb[Y|Z]
+        \end{equation}
+    \end{minipage}
+    \hrule
+    \begin{minipage}[t]{0.47\textwidth}
+\pause \textbf{Common Cause:}
+        \begin{tikzpicture}[baseline=(b.base)]
+            \node (b) at (0,0.3) {};
+            \node[rand_var] (0) at (0, 0.6) {$Z$};
+            \node[rand_var] (1) at (-0.75, 0) {$X$};
+            \node[rand_var] (2) at (0.75, 0) {$Y$};
+            \draw[->] (0) to (1);
+            \draw[->] (0) to (2);
+        \end{tikzpicture}
+        \begin{itemize}
+        \pause \item $X \indep Y$: \pause No
+        \pause \item $X \indep Y | Z$: \pause Yes
+        \end{itemize}
+        \pause
+        \begin{equation}
+        \Pb[Y | Z,X] = \frac{\Pb[Z] \Pb[X|Z] \Pb[Y|Z]}{\Pb[Z] \Pb[X|Z]} = \Pb[Y|Z]
+        \end{equation}
+    \end{minipage}
+    \hfill\vrule\hfill
+    \begin{minipage}[t]{0.52\textwidth}
+\pause \textbf{Common Effect, v-structure:}
+        \begin{tikzpicture}[baseline=(b.base)]
+            \node (b) at (0,0.3) {};
+            \node[rand_var] (0) at (0, 0) {$Z$};
+            \node[rand_var] (1) at (-0.75, 0.6) {$X$};
+            \node[rand_var] (2) at (0.75, 0.6) {$Y$};
+            \draw[->] (1) to (0);
+            \draw[->] (2) to (0);
+        \end{tikzpicture}
+        \begin{itemize}
+            \pause \item $X \indep Y$: \pause Yes
+        \end{itemize}
+        \pause
+        \begin{multline}
+        \Pb[Y | X] = \frac{\Pb[X,Y]}{\Pb[X]} \\ = \frac{\sum_{Z} \Pb[X] \Pb[Y] \Pb[Z=z|X,Y]}{\Pb[X]} = \Pb[Y]
+        \end{multline}
+        \begin{itemize}
+            \pause \item $X \indep Y | Z$: \pause No, counterexample possible
+        \end{itemize}
+        \pause
+        \begin{equation}
+        \Pb[Y | Z,X] = \frac{\Pb[X] \Pb[Y] \Pb[Z|X,Y]}{\sum_{Y}\Pb[X] \Pb[Y=y] \Pb[Z|X,Y=y]} = ?
+        \end{equation}
+        \pause
+        Counterexample possible
+    \end{minipage}
+\end{frame}
+
+\begin{frame}{Active Trail, D-Separation}
+\begin{columns}
+    \column{0.5\textwidth}
+\textbf{General case:} Query $X \indep Y | Z$?\\
+\begin{itemize}
+\pause \item Check all trails (= undirected paths) between pairs of nodes in $X$ and $Y$.
+\pause \item On the trail check all triplets:
+\begin{itemize}
+    \pause \item $A \rightarrow B \rightarrow C$ and $B \notin Z$ 
+        $\Rightarrow$ $\surd$
+    \pause \item $A \leftarrow B \rightarrow C$ and $B \notin Z$ 
+        $\Rightarrow$ $\surd$
+    \pause \item $A \rightarrow B \leftarrow C$ and $(B \cup \Desc{B}) \cap Z = \varnothing$ 
+        $\Rightarrow$ $\surd$
+\end{itemize}
+\pause \item If all checks are positive, the \underline{trail is active} and the query \underline{cannot} be answered positively.
+\pause \item Intuition active trail: Information can flow from $X_1$ to $X_n$.
+\end{itemize}
+\pause
+\begin{definition}[D-Separation]
+$X$ and $Y$ are d-separated given $Z$ if there is no active trail between them.
+$\mathcal{I}(G)$ denotes the set of independencies that correspond to d-separation:
+\begin{equation}
+    \mathcal{I}(G) := \left\{ X \indep Y | Z: \begin{array}{l} X \text{ and } Y \text{ d-separated} \\ \text{given } Z \end{array} \right\}
+\end{equation}
+\end{definition}
+    \pause
+    \column{0.5\textwidth}
+    \begin{center}
+\begin{tikzpicture}
+\tikzset{ X/.style = {rectangle, fill=blue!50, inner sep=0.25cm} }
+\tikzset{ Y/.style = {rectangle, fill=green!50, inner sep=0.25cm} }
+\tikzset{ Z/.style = {rectangle, fill=red!50, inner sep=0.25cm} }
+    % node pos
+    \node (A) at (0,0) {};
+   \node (B) at (-0.5,-1) {};
+   \node (C) at (0,-2) {};
+   \node (D) at (1,-0.5) {};
+   \node (E) at (1,-1.5) {};
+   \node (F) at (1,-2.5) {};
+   \node (G) at (2,0) {};
+   \node (H) at (2,-2) {};
+   \node (I) at (3,-3) {};
+   \node (J) at (3,-3) {};
+    % queries
+    \only<10>{
+\node[X] at (A) {};
+\node[Y] at (G) {};
+    }
+    \only<11>{
+\node[X] at (A) {};
+\node[Y] at (G) {};
+\node[Z] at (D) {};
+\node[Z] at (C) {};
+    }
+    \only<12>{
+\node[X] at (A) {};
+\node[Y] at (G) {};
+\node[Z] at (E) {};
+\node[Z] at (C) {};
+    }
+    \only<13>{
+\node[X] at (A) {};
+\node[Y] at (G) {};
+\node[Z] at (F) {};
+\node[Z] at (J) {};
+    }
+   % random vars
+   \node[rand_var] (A_node) at (A) {$A$};
+   \node[rand_var] (B_node) at (B) {$B$};
+   \node[rand_var] (C_node) at (C) {$C$};
+   \node[rand_var] (D_node) at (D) {$D$};
+   \node[rand_var] (E_node) at (E) {$E$};
+   \node[rand_var] (F_node) at (F) {$F$};
+   \node[rand_var] (G_node) at (G) {$G$};
+   \node[rand_var] (H_node) at (H) {$H$};
+   \node[rand_var] (I_node) at (I) {$I$};
+   \node[rand_var] (J_node) at (J) {$J$};
+   %
+   \draw[->] (A_node) -- (B_node);
+   \draw[->] (A_node) -- (D_node);
+   \draw[->] (B_node) -- (C_node);
+   \draw[->] (C_node) -- (F_node);
+   \draw[->] (D_node) -- (E_node);
+   \draw[->] (G_node) -- (D_node);
+   \draw[->] (G_node) -- (H_node);
+   \draw[->] (H_node) -- (F_node);
+   \draw[->] (H_node) -- (J_node);
+   % legend
+   \node at (-0.5,-4) {$X$:};
+   \node[X] at (0,-4) {};
+   \node at (1.0,-4) {$Y$:};
+   \node[Y] at (1.5,-4) {};
+   \node at (2.5,-4) {$Z$:};
+   \node[Z] at (3,-4) {};
+\end{tikzpicture}
+\end{center}
+\end{columns}
+\end{frame}
+
+\begin{frame}{D-Separation}
+    \label{slide:d-separation}
+\begin{theorem}[Soundness of d-separation]
+    If a distribution $\Pb$ factorizes according to $G$, then $\mathcal{I}(G) \subseteq \mathcal{I}(\Pb)$.
+\end{theorem}
+\pause
+\begin{itemize}
+    \item Proof will be given later in the lecture (need more tools).
+\end{itemize}
+\pause
+\begin{theorem}[Completeness]
+Let $G$ be a BN-structure. If $X$ an $Y$ are not d-separated given $Z$, then $X$ and $Y$ are dependent given $Z$ in some distribution  $\Pb$ that factorizes according to $G$.
+\end{theorem}
+\pause
+\begin{proof}
+    By construction.
+    As $X$ and $Y$ are not d-separated, there exists an active trail $U_1 \rightleftarrows \ldots \rightleftarrows U_k$ between them.
+    We choose conditional probability distributions on the trail to make each $U_i, U_{i+1}$ correlated.
+    \pause
+    For $U_{i} \rightarrow U_{i+1} \leftarrow U_{i+2}$ we define the distribution of $U_{i+1}$ to be correlated to both $U_{i}$ and $U_{i+2}$.
+    Additionally, descendant nodes also activate correlation between $U_i$ and $U_{i+2}$.
+    \pause 
+    All other random variables are assumed to be independent.
+    \pause 
+    Thus, correlation only is contributed through the considered path and cannot cancel out.
+    \pause Technical details are laborious and we omit them here.
+    
+\end{proof}
+\end{frame}
+
+\begin{frame}{D-Separation Algorithm}
+\textbf{Problem:} Enumerating all trails and checking for d-separation is exponential time! \\
+\textbf{Solution:} Efficient polynomial algorithm possible:
+\begin{description}
+\pause \item[Phase I:] Bottom-Up Traversal for Marking $Z$.
+\begin{itemize}
+\pause \item From all leaves to roots, mark all nodes that are in $Z$ or that have descendants in $Z$.
+\pause \item Remember for identifying activity in v-structures.
+\end{itemize}
+\pause \item[Phase II:] Breadth-First Search for Blocking Node Identification.
+\begin{itemize}
+    \pause \item Traverse from $X$ to $Y$ breadth-first.
+    \pause \item Stop if:
+\begin{itemize}
+    \item Node is in middle of v-structure and not marked in previous phase,
+    \item Is not in middle of v-structure and in $Z$,
+\end{itemize}
+    \pause \item Else if reached $Y$: Trail is active.
+\end{itemize}
+\end{description}
+%\end{frame}
+\pause
+\color{gray!90}
+%\begin{frame}{D-Separation Algorithm Phase I}
+\begin{algorithm}[H]
+\caption{D-Separation Phase I}
+\KwData{Input: $G$, $X$, $Y$, $Z$}
+\tcp{Insert all ancestors of $Z$ into $L$}
+$L \leftarrow Z$ \tcp{Nodes to be visited}
+$A \leftarrow \varnothing$ \tcp{Ancestors of $Z$}
+\While{$L \neq \varnothing$}
+{
+Select some node $W$ from $L$\;
+$L \leftarrow L\backslash \{W\}$\;
+\If{$W \notin A$}
+{
+    $L \leftarrow L \cup \Pa{G}{W}$\;
+    $A \leftarrow A \cup \{W\}$\;
+}
+}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{D-Separation Algorithm Phase II}
+\color{gray!90}
+\begin{algorithm}[H]
+\caption{D-Separation Phase II}
+\KwData{Input: $G$, $X$, $Y$, $Z$ $A$}
+$L \leftarrow \{(X,\uparrow)\}$ \tcp{Node \& direction to be visited}
+$V \leftarrow \varnothing$ \tcp{Node \& direction marked as visited}
+$R \leftarrow \varnothing$ \tcp{Nodes reachable via active trail}
+\While{$L \neq \varnothing$}
+{
+    Select some $(W,d)$ from $L$, $L \leftarrow L \backslash \{(W,d)\}$\;
+    \If{$(W,d) \notin V$}
+    {
+    \If{$W \notin Z$}
+    {
+        $R \leftarrow R \cup \{W\}$ \tcp{$W$ is reachable}
+    }
+    $V \leftarrow V \cup \{(W,d)\}$ \tcp{Mark $(W,d)$ as visited}
+    \If{$d = \uparrow$ and $W \notin Z$}
+    {
+        \For{$U \in \Pa{G}{W}$}
+        {
+            $L \leftarrow L \cup \{(U,\uparrow)\}$\;
+        }
+        \For{$U \in \Ch{G}{W}$}
+        {
+            $L \leftarrow L \cup \{(U,\downarrow)\}$\;
+        }
+    } 
+    \ElseIf{$d = \downarrow$}
+    {
+    \If{$W  \notin Z$}
+    {
+        \For{$U \in \Ch{G}{W}$}
+        {
+            $L \leftarrow L \cup \{(U,\downarrow)\}$
+        }
+        \If{$W \in A$}
+        {
+            \For{$U \in \Pa{G}{W}$}
+            {
+                $L \leftarrow L \cup \{(U,\uparrow)\}$
+            }
+        }
+    }
+    }
+    }
+}
+Test $Y \in R$\;
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Equivalent I-Maps}
+\begin{itemize}
+\item Different graphs can encode the same independencies.
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}[baseline=(0.base)]
+    \node[rand_var] (0) at (-1, 0) {$X$};
+    \node[rand_var] (1) at (0, 0) {$Z$};
+    \node[rand_var] (2) at (1, 0) {$Y$};
+    \draw[->] (0) to (1);
+    \draw[->] (1) to (2);
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}[baseline=(0.base)]
+    \node[rand_var] (0) at (-1, 0) {$X$};
+    \node[rand_var] (1) at (0, 0) {$Z$};
+    \node[rand_var] (2) at (1, 0) {$Y$};
+    \draw[<-] (0) to (1);
+    \draw[<-] (1) to (2);
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}[baseline=(0.base)]
+    \node[rand_var] (0) at (-1, 0) {$X$};
+    \node[rand_var] (1) at (0, 0) {$Z$};
+    \node[rand_var] (2) at (1, 0) {$Y$};
+    \draw[<-] (0) to (1);
+    \draw[->] (1) to (2);
+\end{tikzpicture}
+\end{center}
+\pause
+\begin{definition}[I-Equivalence]
+    Two graph structures $G_1$ and $G_2$ are I-equivalent if $\Indep(G_1) = \Indep(G_2)$.
+\end{definition}
+\pause
+\begin{definition}[Skeleton]
+   The skeleton of a Bayesian network $G$  is an undirected graph that contains an edge $\{X,Y\}$ for every arc $(X,Y)$ in $G$.
+\end{definition}
+\pause
+\begin{itemize}
+    \item $G_1$ and $G_2$ have the same skeleton $\overset{?}{\Rightarrow}$ $G_1$ and $G_2$ are $I$-equivalent. \pause No
+\end{itemize}
+\pause
+\begin{theorem}[I-Equivalence]
+Let $G_1$ and $G_2$ be two directed acyclic graphs.
+If $G_1$ and $G_2$ have the same skeleton and the same set of v-structures then they are I-equivalent.
+\end{theorem}
+\pause
+\begin{proof}
+    Follows from the characterization of d-separation in terms of v-structures and active trails.
+\end{proof}
+\end{frame}
+
+\begin{frame}{Immoralities}
+    \begin{itemize}
+    \item Are graphs I-equivalent?
+    \end{itemize}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.7]
+    \node[rand_var] (X) at (-1,0) {$X$};
+    \node[rand_var] (Z) at (0,-1.15) {$Z$};
+    \node[rand_var] (Y) at (1,0) {$Y$};
+    \draw[thick,->] (X) -- (Z);
+    \draw[thick,->] (Y) -- (Z);
+%
+    \begin{scope}[shift={(4,0)}]
+    \node[rand_var] (X) at (-1,0) {$X$};
+    \node[rand_var] (Z) at (0,-1.15) {$Z$};
+    \node[rand_var] (Y) at (1,0) {$Y$};
+    \draw[thick,->] (X) -- (Z);
+    \draw[thick,->] (Y) -- (Z);
+    \draw[thick,->] (X) -- (Y);
+    \end{scope}
+\pause
+    \begin{scope}[shift={(8,0)}]
+    \node[rand_var] (X) at (-1,0) {$X$};
+    \node[rand_var] (Z) at (0,-1.15) {$Z$};
+    \node[rand_var] (Y) at (1,0) {$Y$};
+    \draw[thick,->] (X) -- (Z);
+    \draw[thick,->] (Y) -- (Z);
+    \draw[thick,<-] (X) -- (Y);
+    \end{scope}
+\pause
+    \begin{scope}[shift={(12,0)}]
+    \node[rand_var] (X) at (-1,0) {$X$};
+    \node[rand_var] (Z) at (0,-1.15) {$Z$};
+    \node[rand_var] (Y) at (1,0) {$Y$};
+    \draw[thick,<-] (X) -- (Z);
+    \draw[thick,->] (Y) -- (Z);
+    \draw[thick,<-] (X) -- (Y);
+    \end{scope}
+    \end{tikzpicture}
+\end{center}
+    \pause
+\begin{definition}[Immorality]
+    A v-structure $X \rightarrow Z \leftarrow Y$ is an immorality if there is no arc between $X$ and $Y$.
+\end{definition}
+\pause
+\begin{theorem}[I-Equivalence II]
+    $G_1$ and $G_2$ are I-equivalent iff they have the same skeleton and the same set of immoralities.
+\end{theorem}
+\begin{proof}
+Skipped.
+\end{proof}
+\end{frame}

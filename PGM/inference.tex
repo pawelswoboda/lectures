@@ -1,0 +1,68 @@
+\section{Inference}
+
+\begin{frame}{Inference: Questions}
+\begin{itemize}
+\item How to compute marginal probabilities $\Pb[X]$ for some variables $X \subseteq \mathcal{X}$?
+\begin{itemize}
+    \pause \item given evidence $\Pb[X | Y = e]$?
+\end{itemize}
+\pause \item How to draw samples $x \sim \Pb[X]$ given a probability distribution?
+\begin{itemize}
+    \pause \item given evidence $x \sim \Pb[X | Y = e]$?
+\end{itemize}
+\pause \item How to find most probable assignment $\argmax_{x} \Pb[x]$ (resp.\ conditional version)?
+\pause \item In Markov networks: How to compute the partition function $Z$?
+\pause \item Naive approach for marginal probabilities: Consider all possible assignments? 
+\begin{itemize}
+\pause \item Compute $\Pb[x,e] = \sum_{w} \Pb[x,e,w]$ where $w$ all non-observed variables we are not interested in.
+\pause \item Next compute $\Pb[e] = \sum_{x} \Pb[x,e]$,
+%\pause \item Draw samples according to $\Pb[X | Y = e] = \frac{\Pb[X,e]}{\Pb[e]}$, examining each.
+\pause \item Not scalable, exponential blowup!
+\pause \item In general inference is NP-hard: better general methods not probable to exist.
+\pause \item Still worth studying: 
+\begin{itemize}
+    \item Fast exact methods possible in special cases.
+    \pause \item Approximate methods might be good enough in practice.
+\end{itemize}
+\end{itemize}
+\pause \item Can we exploit network structure if $\Pb$ is a $\{$Bayesian$|$Markov$\}$ network?
+\end{itemize}
+\end{frame}
+
+%\input{variable-elimination}
+%\input{clique-tree}
+%\input{clique-tree-inference}
+\input{inference-as-optimization}
+
+\begin{frame}{Inference Overview}
+    \begin{center}
+\begin{tikzpicture}[scale=1.3]
+    \tikzset{mystyle/.style={rand_var, text width=2cm}
+    }
+    \node [mystyle] (VEpsi) at (0, 0) {VE \& $\psi$ (Algorithm~\ref{alg:sum-product-variable-elimination})};
+	\node [mystyle] (IndGraph) at (2, 0) {Induced Graph};
+	\node [mystyle] (ClusterTree) at (2, -1) {VE Cluster Tree};
+	\node [mystyle] (rip) at (2, -2) {Running intersection property};
+	\node [mystyle] (separation) at (5, -2) {Sepsets separate};
+	\node [mystyle] (chordal) at (0, -3) {Chordal Graph};
+	\node [mystyle] (CTSP) at (1, -4) {Clique Tree Sum-Product (Algorithm~\ref{alg:clique-tree-variable-elimination}\&\ref{alg:calibration-sum-product-clique-tree})};
+	\node [mystyle] (CGMP) at (3, -4) {Cluster Graph Message Passing};
+	\node [mystyle] (BP) at (1, -5) {Belief Propagation};
+	\node [mystyle] (EP) at (3, -5) {Expectation Propagation};
+	\node [mystyle] (MF) at (5, -5) {Mean-Field Methods};
+
+    \draw[->] (VEpsi) to (IndGraph);
+    \draw[->] (IndGraph) to node[right] {Theorem~\ref{thm:ve-cluster-graph-tree}} (ClusterTree);
+    \draw[->] (ClusterTree) to node[right] {Theorem~\ref{thm:ve-cluster-tree-rip}} (rip);
+    %\draw[->] (ClusterTree) to (separation);
+    \draw[<->] (rip) to node[above] {Clique Tree} node[below] {Theorem~\ref{thm:rip-separation}} (separation);
+    \draw[->, bend right=45] (IndGraph) to node[left] {Theorem~\ref{thm:induced-graph-chordal}} (chordal);
+    \draw[->, bend right=15] (chordal) to node[below] {Theorem~\ref{thm:chordal-graphs-have-clique-trees}} (separation);
+    \draw[<->, bend right=85] (VEpsi) to node[left] {Proposition~\ref{prop:clique-tree-sp-beliefs}} (CTSP);
+    \draw[->] (CTSP) to (CGMP);
+    \draw[->] (CGMP) to (BP);
+    \draw[->] (CGMP) to (EP);
+    \draw[->] (CGMP) to (MF);
+\end{tikzpicture}
+\end{center}
+\end{frame}

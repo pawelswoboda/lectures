@@ -1,0 +1,101 @@
+\documentclass[8pt,handout,notheorems]{beamer}
+%\documentclass[8pt,notheorems]{beamer}
+\usetheme{CambridgeUS}
+\setbeamertemplate{theorems}[numbered]
+\usecolortheme{beaver}
+
+% packages
+\input{includes}
+% for faster compilation
+%\usetikzlibrary{external}
+%\tikzexternalize[prefix=tikz/]
+
+% number math environments
+\makeatletter
+    \ifbeamer@countsect
+      \newtheorem{theorem}{\translate{Theorem}}[section]
+    \else
+      \newtheorem{theorem}{\translate{Theorem}}
+    \fi
+    \newtheorem{corollary}{\translate{Corollary}}
+    \newtheorem{lemma}{\translate{Lemma}}
+    \newtheorem{proposition}{\translate{Proposition}}
+
+    \theoremstyle{definition}
+    \newtheorem{definition}{\translate{Definition}}
+
+    \theoremstyle{example}
+    \newtheorem{example}{\translate{Example}}
+    \newtheorem{remark}{\translate{Remark}}
+\makeatother
+
+% make lists pretty
+\setitemize{label=\usebeamerfont*{itemize item}%
+\usebeamercolor[fg]{itemize item}
+\usebeamertemplate{itemize item}}
+
+% color settings:
+\definecolor{slide_beige}{RGB}{253,207,182}
+\definecolor{slide_blue}{RGB}{198,210,237}
+\definecolor{slide_violet}{RGB}{87,0,127}
+\definecolor{slide_green}{RGB}{200,217,217}
+
+%\definecolor{gold}{HTML}{FDD017}
+%\definecolor{deep sky blue}{HTML}{3BB9FF}
+%\definecolor{light sky blue}{HTML}{82CAFA}
+
+%\definecolor{mybackground}{HTML}{82CAFA}
+%\definecolor{myforeground}{HTML}{0000A0}
+
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{alerted text}{fg=red}
+\setbeamercolor{example text}{fg=black}
+
+\setbeamercolor{background canvas}{fg=slide_green, bg=white}
+\setbeamercolor{background}{fg=slide_green, bg=violet}
+
+\setbeamercolor{palette primary}{fg=black, bg=slide_green}
+\setbeamercolor{palette secondary}{fg=black, bg=slide_blue}
+\setbeamercolor{palette tertiary}{fg=black, bg=slide_beige}
+
+%\setbeamercolor{frametitle}{fg=cyan!80!black}
+\setbeamercolor{frametitle}{fg=black}
+\setbeamercolor{title}{fg=black}
+
+\setbeamertemplate{headline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.65ex,dp=1.5ex,center]{section in head/foot}%
+    \usebeamerfont{section in head/foot}\insertsectionhead\hspace*{2ex}
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.65ex,dp=1.5ex,center]{subsection in head/foot}%
+    \usebeamerfont{subsection in head/foot}\hspace*{2ex}\insertsubsectionhead
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+
+
+\title{Probabilistic Machine Learning}
+\author{Paul Swoboda}
+\institute{HHU D\"usseldorf}
+\date{Winter Semester 2023/24}
+
+\begin{document}
+
+\frame{\titlepage}
+
+%\frame{\tableofcontents}
+%\frame{\tableofcontents[hideallsubsections]}
+
+%\input{intro}
+%\input{bayesian}
+%\input{markov}
+\input{inference}
+\input{sampling}
+\input{map-inference}
+\input{learning}
+\input{appendix}
+
+\end{document}

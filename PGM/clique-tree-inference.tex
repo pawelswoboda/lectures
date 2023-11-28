@@ -1,0 +1,433 @@
+\subsection{Clique Tree Inference, Message Passing}
+\begin{frame}{Variable Elimination in a Clique Tree, Example}
+\begin{itemize}
+    \item Idea: Given clique tree, use it to perform inference.
+    \begin{itemize}
+        \pause \item VE: algorithm induced clique tree, now the other way around.
+    \end{itemize}
+    \pause \item Modify factors with messages to obtain marginal probabilities.
+    \begin{itemize}
+        \pause \item Factor modifications are done with \emph{messages}.
+    \end{itemize}
+\end{itemize}
+\pause
+\begin{example}[Clique Tree and Conditional Probability Distributions]
+\begin{columns}[T]
+\column{0.2\textwidth}
+    \begin{center}
+        \begin{tikzpicture}[scale=0.7]
+            \node[rand_var] (C) at (-1, 5) {C};
+            \node[rand_var] (D) at (-1, 4) {D};
+            \node[rand_var] (G) at (0, 3) {G};
+            \node[rand_var] (I) at (1, 4) {I};
+            \node[rand_var] (L) at (0, 2) {L};
+            \node[rand_var] (H) at (-1, 1) {H};
+            \node[rand_var] (S) at (1, 1) {S};
+            \node[rand_var] (J) at (2, 3) {J};
+            \draw[->] (C) to (D);
+            \draw[->] (D) to (G);
+            \draw[->] (I) to (G);
+            \draw[->] (I) to (J);
+            \draw[->] (J) to (S);
+            \draw[->] (G) to (L);
+            \draw[->] (L) to (S);
+            \draw[->] (S) to (H);
+            \draw[bend right=15,->] (G) to (H);
+            \pause
+            % moral edges
+            \draw[blue] (D) to (I);
+            \draw[blue] (L) to (J);
+            \draw[blue, bend left=15] (G) to (S);
+            \pause
+            % fill edges
+            \draw[red] (G) to (J);
+        \end{tikzpicture}
+    \end{center}
+    \pause
+    \column{0.8\textwidth}
+    \begin{tikzpicture}[scale=1.9]
+        \node[rand_var] (CD) at (0,0) {1:CD};
+        \node[rand_var] (DIG) at (1,0) {2:DIG};
+        \node[rand_var] (GIJ) at (2,0) {3:GIJ};
+        \node[rand_var] (GJLS) at (3,0) {5:GJLS};
+        \node[rand_var] (GHS) at (4,0) {4:GHS};
+        \draw (CD) to node[below] {D} (DIG);
+        \draw (DIG) to node[below] {GI} (GIJ);
+        \draw (GIJ) to node[below] {GJ} (GJLS);
+        \draw (GJLS) to node[below] {GS} (GHS);
+        \only<4->{
+        \draw[->] (CD) to node[below] {D} (DIG);
+        \draw[->](DIG) to node[below] {GI} (GIJ);
+        \draw[->] (GIJ) to node[below] {GJ} (GJLS);
+        \draw[<-] (GJLS) to node[below] {GS} (GHS);
+        }
+        %
+        \pause
+        \node[fill=gray!20, text width=1cm, shape=rectangle callout, callout relative pointer={(0.5,1)},  callout pointer width=0.51cm]
+         (CDpb) at (-0.4,-0.85) {$\Pb[D|C]$ $\Pb[C]$};
+        \pause
+        \node[fill=gray!20, shape=rectangle callout, callout relative pointer={(0.5,1)},  callout pointer width=0.51cm]
+         (DIGpb) at (-0.4+1,-0.8) {$\Pb[G|I,D]$};
+        \pause
+        \node[fill=gray!20, text width=1cm, shape=rectangle callout, callout relative pointer={(0.5,1)},  callout pointer width=0.51cm]
+         (GIJpb) at (-0.4+2,-0.85) {$\Pb[J|I]$ $\Pb[I]$};
+        \pause
+        \node[fill=gray!20, text width=1.1cm, shape=rectangle callout, callout relative pointer={(0.5,1)},  callout pointer width=0.51cm]
+         (GJLSpb) at (-0.4+3,-0.85) {$\Pb[L|G]$ $\Pb[S|L,J]$};
+        \pause
+        \node[fill=gray!20, text width=1.25cm, shape=rectangle callout, callout relative pointer={(0.5,1)},  callout pointer width=0.51cm]
+         (GHSpb) at (-0.4+4,-0.8) {$\Pb[H|G,S]$};
+        %
+        \pause
+        \node[fill=brown!20, text width=1.5cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (12msg) at (0.0,0.75) {$\delta_{1 \rightarrow 2}(D)=$ $\sum_C \psi_1(C_1)$};
+        \pause
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (23msg) at (1.0+0.1,0.8) {$\delta_{2 \rightarrow 3}(G,I)=$ $\sum_D \psi_2(C_2) \times \delta_{1 \rightarrow 2}(D)$};
+        \pause
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (35msg) at (2.0+0.1,0.8) {$\delta_{3 \rightarrow 5}(G,J)=$ $\sum_I \psi_3(C_3) \times \delta_{2 \rightarrow 3}(G,I)$};
+        \pause
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(-0.5,-1)},  callout pointer width=0.51cm]
+         (45msg) at (4.0-0.2+0.1,0.75) {$\delta_{4 \rightarrow 5}(G,S)=$ $\sum_H \psi_4(C_4)$};
+    \end{tikzpicture}
+    \end{columns}
+        \begin{itemize}
+        \pause\item Assume we want to compute $\Pb[S]$, then:
+        \begin{itemize}
+            \pause \item Compute factors $\psi_i(C_i) = \prod_{\phi: \Scope[\phi] \in C_i} \phi$.
+            \pause \item Perform message passing, computing $\delta_{i \rightarrow j}$ in direction of clique $5$.
+            \pause \item Compute $\Pb[S] = \sum_{G,L,J} \psi_5(G,J,S,L) \times \delta_{3 \rightarrow 5}(G,J) \times \delta_{4 \rightarrow 5}(G,S)$.
+        \end{itemize}
+        \end{itemize}
+\end{example}
+\end{frame}
+
+\begin{frame}{Clique Tree Message Passing}
+    Notation for Clique Tree VE:
+    \begin{itemize}
+        \item $C_r$: root clique containing the variable we want to infer.
+        \pause \item Choose edge directions such that $C_r$ becomes the root of a directed tree.
+        \begin{itemize}
+            \pause \item $p_r(i)$: parent of $i$ in the clique tree.
+        \end{itemize}
+        \pause \item $\xi(\phi)$: (randomly chosen) clique $C_i$ such that $\Scope[\phi] \subseteq C_i$.
+        \pause \item $\delta_{i \rightarrow j}$: message from clique $C_i$ to clique $C_j$.
+    \end{itemize}
+    \pause
+    \begin{algorithm}[H]
+    \label{alg:clique-tree-variable-elimination}
+    \caption{Upward Pass Clique Tree VE}
+    \KwInput{$\Phi$, $T$, root clique $C_r$}
+    \pause
+    \tcp{Initialize Cliques}
+    \For{$C \in T$}{
+        $\psi_C \leftarrow \prod_{\phi: \xi(\phi) = i} \phi$\;
+        Mark $C$ as not ready if it has incoming edges, else as ready.\;
+    }
+    \pause
+    \tcp{Upward Pass}
+%    Mark cliques with children as not ready.\;
+    \While{$C_r$ is not ready}{
+        Let $C_i$ be a ready clique\;
+    \pause
+        \begin{tcolorbox}[width=8.5cm]
+        $\delta_{i \rightarrow p_r(i)}(S_{i p_r(i)}) \leftarrow \sum_{C_i \setminus S_{i,p_r(i)}} \psi_{C_i} \cdot \prod_{k \in \Nb(i) \backslash \{p_r(i)\}} \delta_{k \rightarrow i}$\;
+        \end{tcolorbox}
+    \pause
+        \If{all messages $\delta_{j p_r(j)} : p_r(i) = p_r(j)$ are sent}{
+            Mark $C_{p_r(i)}$ as ready.\;
+        }
+    }
+    \end{algorithm}
+\end{frame}
+
+\begin{frame}{Clique Tree Message Passing Correctness}
+%    \begin{definition}[Variable Elimination Clique Tree VE]
+%    We say $X$ is eliminated in Algorithm~\ref{alg:clique-tree-variable-elimination} when a message is sent from $C_i$ to $C_j$ such that $X \in C_i$ but $X \notin C_j$.
+%    \end{definition}
+%    \pause
+\begin{lemma}
+    \label{lemma:clique-tree-elimination}
+    We say $X$ is eliminated in Algorithm~\ref{alg:clique-tree-variable-elimination} when a message is sent from $C_i$ to $C_j$ such that $X \in C_i$ but $X \notin C_j$.
+Assume that $X$ is eliminated when a message is sent from $C_i$ to $C_j$. Then $X$ does not appear anywhere in the tree on the $C_j$ side of edge $ij$.
+\end{lemma}
+\begin{proof}
+    The proof follows from the running intersection property.
+    \pause
+    Assume by contradiction that $X$ appears in some clique $C_k$ that is on the $C_j$ side of the tree.
+    \pause
+    Then $C_j$ is on the path from $C_i$ to $C_k$.
+    \pause
+    But $X$ appears in both $C_i$ and $C_k$ but not in $C_j$, violating the running intersection property.
+\end{proof}
+%\begin{itemize}
+%    \item Meaning of message in clique tree:
+%\end{itemize}
+\pause
+\begin{theorem}
+    \label{thm:clique-tree-sp-message-expression}
+Let $\delta_{i \rightarrow j}$ be a message from $C_i$ to $C_j$. 
+Let $W_{<(ij)}$ be the variables found only on the $C_i$ side of $T$ and $F_{<(ij)}$ the cliques on the $C_i$ side. Then 
+\begin{equation}
+    \label{eq:clique-tree-message-expression}
+    \delta_{i \rightarrow j}(S_{ij}) = \sum_{X \in W_{<(ij)}} \prod_{\phi: \xi(\phi) \in F_{<(ij)}} \phi 
+\end{equation}
+\end{theorem}
+\pause
+\vspace{-0.2cm}
+\begin{corollary}
+    After running Algorithm~\ref{alg:clique-tree-variable-elimination} it holds
+    $\psi_r \prod_{k \in \Nb(r)} \delta_{k \rightarrow r} = \sum_{\mathcal{X} \backslash C_r} \prod_{i} \phi_i$ where $C_r$ is the root clique.
+\end{corollary}
+\end{frame}
+
+\begin{frame}{Clique Tree Message Passing Correctness, Proof}
+    \begin{proof}[Proof of Theorem~\ref{thm:clique-tree-sp-message-expression}]
+        By induction on the length of taken path from leaves.
+        \begin{itemize}
+            \pause \item \underline{Base Case:}
+            Then $C_i$ is a leaf. The result follows from examining the operations executed at the clique.
+            \pause \item \underline{$C_i$ not a leaf:}
+            Let $i_1,\ldots,i_m$ be the neighboring cliques of $C_i$ other than $C_j$.
+            \pause
+            From Lemma~\ref{lemma:clique-tree-elimination} it follows that $W_{<(ij)}$ is the disjoint union of $W_{<(i_1i)},\ldots,W_{<(i_mi)}$ and the variables $Y_i$ eliminated at $C_i$ itself.
+            \pause
+            Similarly, $C_{<(ij)}$ is the disjoint union of $F_{<(i_1i)},\ldots,F_{<(i_mi)}$ and the factors in $F_i$ from which $\psi_i$ was computed.
+            \pause
+            Then~\eqref{eq:clique-tree-message-expression} is equal to
+            \begin{equation*}
+               \sum_{Y_i} \sum_{W_{<(i_1i)}} \sum_{W_{<(i_mi)}} \left( \prod_{\phi \in F_i} \phi \right) \left(\prod_{\phi \in F_{<(i_1i)}} \phi \right) \dots \left(\prod_{\phi \in F_{<(i_mi)}} \phi \right) 
+            \end{equation*}
+            \pause
+            \begin{equation}
+               = \sum_{Y_i} \left(\prod_{\phi \in F_i} \phi \right) \sum_{W_{<(i_1i)}} \left(\prod_{\phi \in F_{<(i_1i)}} \phi \right) \dots \sum_{W_{<(i_mi)}}  \left(\prod_{\phi \in F_{<(i_mi)}} \phi \right) 
+            \end{equation}
+            \pause
+            \vspace{-0.1cm}
+            Using the inductive hypothesis and the definition of $\psi_i$ we the upward pass expression we get
+            \begin{equation}
+            \sum_{Y_i} \psi_i \cdot \delta_{i1 \rightarrow i} \dots \delta_{i_m \rightarrow i}\,.
+            \end{equation}
+        \end{itemize}
+    \end{proof}
+\end{frame}
+
+\begin{frame}{Clique Tree Calibration}
+\begin{itemize}
+\item How way to compute marginals for all variables?
+\begin{itemize}
+    \pause \item \underline{Naive:} Run Algorithm~\ref{alg:sum-product-variable-elimination} (resp.~\ref{alg:clique-tree-variable-elimination}) once for each variable. \pause Not efficient!
+    \pause \item \underline{Better:} Reuse messages in in Algorithm~\ref{alg:clique-tree-variable-elimination}.
+\end{itemize}
+\end{itemize}
+\begin{example}[Upstream \& Downstream Message Passing]
+    \begin{center}
+    \begin{tikzpicture}[scale=1.9]
+        \node[rand_var] (CD) at (0,0) {1:CD};
+        \node[rand_var] (DIG) at (1,0) {2:DIG};
+        \node[rand_var] (GIJ) at (2,0) {3:GIJ};
+        \node[rand_var] (GJLS) at (3,0) {5:GJLS};
+        \node[rand_var] (GHS) at (4,0) {4:GHS};
+        % upstream pass
+        \pause
+        \draw[->, transform canvas={yshift=0.075cm}] (CD) to (DIG);
+        \node[fill=brown!20, text width=1.5cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (12msg) at (0.13,0.80) {$\delta_{1 \rightarrow 2}(D)=$ $\sum_C \psi_1(C_1)$};
+        \pause
+        \draw[->, transform canvas={yshift=0.075cm}] (DIG) to (GIJ);
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (23msg) at (1.0+0.1,0.85) {$\delta_{2 \rightarrow 3}(G,I)=$ $\sum_D \psi_2(C_2) \times \delta_{1 \rightarrow 2}(D)$};
+        \pause
+        \draw[->, transform canvas={yshift=0.075cm}] (GIJ) to (GJLS);
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(0.5,-1)},  callout pointer width=0.51cm]
+         (35msg) at (2.0+0.1,0.85) {$\delta_{3 \rightarrow 5}(G,J)=$ $\sum_I \psi_3(C_3) \times \delta_{2 \rightarrow 3}(G,I)$};
+        \pause
+        \draw[<-, transform canvas={yshift=0.075cm}] (GJLS) to (GHS);
+        \node[fill=brown!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(-0.5,-1)},  callout pointer width=0.51cm]
+         (45msg) at (4.0-0.1,0.80) {$\delta_{5 \rightarrow 4}(G,S)=$ $\sum_H \psi_4(C_4)$};
+        % downstream pass
+        \pause
+        \draw[->, transform canvas={yshift=-0.055cm}] (GJLS) to (GHS);
+        \node[fill=cyan!20, text width=1.7cm, shape=rectangle callout, callout relative pointer={(-0.5,1)},  callout pointer width=0.51cm]
+         (54msg) at (4.0-0.1,-0.85) {$\delta_{5 \rightarrow 4}(G,S)=$ $\sum_{H} \psi_5(C_5) \times \delta_{3 \times 5}(G,S)$};
+         \pause
+        \draw[<-, transform canvas={yshift=-0.075cm}] (GIJ) to (GJLS);
+        \node[fill=cyan!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(-0.5,1)},  callout pointer width=0.51cm]
+        (53msg) at (3.0-0.1,-0.85) {$\delta_{5 \rightarrow 3}(G,J)=$ $\sum_{L,S} \psi_5(C_5) \times \delta_{4 \rightarrow 5}(G,J)$};
+        \pause
+        \draw[<-, transform canvas={yshift=-0.075cm}] (DIG) to (GIJ);
+        \node[fill=cyan!20, text width=1.6cm, shape=rectangle callout, callout relative pointer={(-0.5,1)},  callout pointer width=0.51cm]
+         (23msg) at (2.0-0.1,-0.85) {$\delta_{3 \rightarrow 2}(G,I)=$ $\sum_J \psi_3(C_3) \times \delta_{5 \rightarrow 3}(I)$};
+        \pause
+        \draw[<-, transform canvas={yshift=-0.075cm}] (CD) to (DIG);
+        \node[fill=cyan!20, text width=1.7cm, shape=rectangle callout, callout relative pointer={(-0.4,1)},  callout pointer width=0.51cm]
+         (12msg) at (1.0-0.2,-0.85) {$\delta_{2 \rightarrow 1}(D)=$ $\sum_{I,G} \psi_2(C_2) \times \delta_{3 \rightarrow 2}(D)$};
+    \end{tikzpicture}
+\end{center}
+\end{example}
+
+\pause 
+\begin{itemize}
+\item Add downstream pass going from root node to leaves.
+\pause \item Upstream messages $\delta_{i \rightarrow p_r(i)}$ $\forall i \neq r$.
+\pause \item Downstream messages $\delta_{p_r(i) \rightarrow i}$ $\forall i \neq r$. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Clique Tree Calibration}
+\begin{itemize}
+\item We will formalize the two-direction message passing algorithm below.
+\end{itemize}
+\pause
+\begin{definition}[Ready to Transmit]
+    Let $T$ be a clique tree. We say that $C_i$ is ready to transmit to a neighbor $C_j$ when $C_i$ has messages from all its neighbors except $C_j$.
+\end{definition}
+\pause
+\begin{algorithm}[H]
+   \caption{Calibration Sum-Produce Message Passing in Clique Tree}
+   \label{alg:calibration-sum-product-clique-tree}
+    \KwInput{$\Phi$, $T$, root clique $C_r$}
+    Call Algorithm~\ref{alg:clique-tree-variable-elimination}($\Phi, T, C_r$).\;
+    %\tcp{Initialize Cliques}
+    %\For{$C \in T$}{
+    %    $\psi_C \leftarrow \prod_{\phi: \xi[phi] = i} \phi$\;
+    %    Mark $C$ as not ready.\;
+    %}
+    \tcp{Downstream Pass}
+    \While{$\exists ij$ such that $i$ is ready to transmit to $j$}
+    {
+        $\underbrace{\delta_{i \rightarrow j}(S_{ij}) \leftarrow \sum_{C_i \setminus S_{ij}} \psi_{C_i} \cdot \prod_{k \in \Nb(i) \backslash \{j\}} \delta_{k \rightarrow i}}_{= \text{SP-Message}(i,j)}$\;
+    }
+\end{algorithm}
+\begin{itemize}
+    \pause \item If we schedule the downstream pass such that messages from the root to the children are computed in order than only twice the computations of Algorithm~\ref{alg:clique-tree-variable-elimination} are needed.
+    \pause \item We will see that all posterior probabilities $\sum_{\mathcal{X} \backslash C} \prod_i \phi_i$ are computed by Algorithm~\ref{alg:calibration-sum-product-clique-tree}.
+    \begin{itemize}
+        \pause \item More efficient than calling Algorithm~\ref{alg:clique-tree-variable-elimination} $\abs{\mathcal{X}}$ times.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Beliefs}
+\begin{proposition}[Beliefs]
+\label{prop:clique-tree-sp-beliefs}
+    Define the belief of a clique $C_i$ as
+    %\begin{equation}
+    $\beta_i(C_i) = \psi_i \cdot \prod_{k \in \Nb(i)} \delta_{k \rightarrow i}$.
+    %\end{equation}
+    Then it holds that the beliefs after executing Algorithm~\ref{alg:calibration-sum-product-clique-tree} are
+    \begin{equation}
+        \beta_i(C_i) = \sum_{\mathcal{X} \backslash C_i} \prod_{i} \phi_i \,.
+    \end{equation}
+\end{proposition}
+\pause
+\begin{proof}
+    Proof by observing that the beliefs from Algorithm~\ref{alg:calibration-sum-product-clique-tree} coincide with those from Algorithm~\ref{alg:clique-tree-variable-elimination} when called for each clique.
+\end{proof}
+\pause
+\begin{definition}[Calibrated Messages, Beliefs]
+    \label{def:calibrated-messages}
+    We say that two adjacent cliques $C_i$ and $C_j$ are calibrated if
+    \begin{equation}
+        \label{eq:calibrated-beliefs}
+        \sum_{C_i \backslash S_{ij}} \beta_i(C_i) = \sum_{C_j \backslash S_{ij}} \beta_j(C_j)
+    \end{equation}
+    \pause
+    A clique tree is calibrated if all pairs of adjacent cliques are calibrated.
+    \pause
+    For a calibrated clique tree we use the term clique belief for $\beta_i(C_i)$ and sepset belief for
+    \begin{equation}
+        \mu_{ij}(S_{ij}) =
+        \sum_{C_i \backslash S_{ij}} \beta_i(C_i) = \sum_{C_j \backslash S_{ij}} \beta_j(C_j)
+    \end{equation}
+\end{definition}
+\pause
+\begin{corollary}
+Beliefs after Algorithm~\ref{alg:calibration-sum-product-clique-tree} are calibrated.
+\end{corollary}
+\pause
+\begin{proof}
+Follows from Proposition~\ref{prop:clique-tree-sp-beliefs} by noting that we can sum out the posterior distribution from any clique $i$ or $j$.
+\end{proof}
+\end{frame}
+
+\begin{frame}{Calibrated Clique Tree}
+\begin{proposition}[Unnormalized Gibbs Distribution $=$ Clique/Sepset Beliefs]
+    \label{prop:calibrated-clique-tree}
+    At convergence of Algorithm~\ref{alg:calibration-sum-product-clique-tree} we have
+    \begin{equation}
+    \tilde{\Pb}_{\Phi}(\mathcal{X}) := \prod_i \phi_i(\mathcal{X}_{\Scope[\phi]}) = \frac{\prod_{i} \beta_i(C_i)}{\prod_{ij} \mu_{ij}(S_{ij})}\,.
+    \end{equation}
+\end{proposition}
+\pause
+    \begin{proof}
+        At convergence we have that $\beta_i = \psi_i \cdot \prod_{k \in \Nb(i)} \delta_{k \rightarrow i}$.
+\pause
+        We also have that
+        \begin{equation}
+            \begin{aligned}
+                \mu_{ij}(S_{ij}) = & \sum_{C_i \backslash S_{ij}} \beta_i(C_i) 
+                \pause = \sum_{C_i \backslash S_{ij}} \psi_i \cdot \prod_{k \in \Nb(i)} \delta_{k \rightarrow i} \\
+                \pause = & \sum_{C_i \backslash S_{ij}} \psi_i \cdot \delta_{j \rightarrow i} \cdot \prod_{k \in \Nb(i) \backslash \{j\}} \delta_{k \rightarrow i}  
+                \pause = \delta_{j \rightarrow i} \sum_{C_i \backslash S_{ij}} \psi_i \cdot \prod_{k \in \Nb(i) \backslash \{j\}} \delta_{k \rightarrow i} 
+                \pause = \delta_{j \rightarrow i} \delta_{i \rightarrow j}
+            \end{aligned}
+        \end{equation}
+        \pause
+        Each message $\delta_{i \rightarrow j}$ appears exactly once in the numerator and exactly once in the denominator, hence all messages cancel out.
+        \pause
+        What remains is the factors $\psi$ in the numerator, which form the original Gibbs distribution.
+    \end{proof}
+    \begin{itemize}
+    \item Proposition~\ref{prop:calibrated-clique-tree} shows from the beliefs we can obtain the original Gibbs distribution on top of the posterior distributions.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Clique Tree Measure}
+    \begin{definition}[Clique Tree Measure]
+       The clique tree measure induced by a calibrated tree $T$ is 
+       \begin{equation}
+              Q_T(\mathcal{X}) = \frac{\prod_{i} \beta_i(C_i)}{\prod_{ij} \mu_{ij}(S_{ij})}\,.
+       \end{equation}
+    \end{definition}
+    \pause
+\begin{theorem}[Clique Tree Measure $\propto$ unnormalized Gibbs Distribution]
+\label{thm:calibrated-clique-tree-Q}
+Let $T$ be a clique tree over $\Phi$ and $\beta_i(C_i)$ be calibrated beliefs. 
+Then $\tilde{\Pb}_{\Phi}[\mathcal{X}] \propto Q_T$ $\Leftrightarrow$ for each $i$ we have $\beta_i(C_i) \propto \tilde{\Pb}_{\Phi}(C_i)$.
+\end{theorem}
+\pause
+\begin{proof}
+Let $r$ be a clique in $T$, which is chosen to be the root.
+The descendant cliques of $C_i$ to be those that are downstream from $C_i$ relative to $C_r$. The non-descendant ones are the remaining ones.
+Let $X$ be the non-descendant variables.
+\end{proof}
+\end{frame}
+\begin{frame}{Clique Tree Measure Proof cont.}
+\begin{proof}
+\begin{itemize} \item $\Leftarrow$:
+    \pause
+It follows from Theorem~\ref{thm:rip-separation} that for the distribution $\tilde{\Pb}_{\Phi}$ we have
+\begin{equation}
+    C_i \indep X | S_{i,p_r(i)}
+\end{equation}
+From this we obtain using the chain rule that 
+\begin{equation}
+    \tilde{\Pb}_{\Phi} = \tilde{\Pb}_{\Phi}[C_r] \cdot \prod_{i \neq r} \tilde{\Pb}_{\Phi}[C_i | S_{i,p_r(i)}]
+\end{equation}
+We can rewrite $Q_T$ similarly as 
+\begin{equation}
+    Q_T(\mathcal{X}) = \beta_r(C_r) \cdot \prod_{i \neq r} \beta_i(C_i | S_{i,p_r(i)})
+\end{equation}
+The claim follows from substituting $\beta$ for each $\tilde{\Pb}_{\Phi}(C_i)$.
+\pause \item $\Rightarrow$: \pause
+Note that each of the terms $\beta_i(C_i | S_{i p_r(i)})$ is a conditional distribution.
+Hence, if we marginalize out the variables not in $C_r$ in the distribution $Q_T$, we obtain a conditional distribution that sums up to $1$, and so we are left with $Q_T(C_r) = \beta_r(C_r)$.
+\pause
+It follows that if $\tilde{\Pb}_{\Phi} \propto Q_T$ then $\tilde{\Pb}_{\Phi}(C_r) \propto Q_T(C_r) = \beta_r(C_r)$.
+\pause
+This argument applies to all choices of root clique $r$, proving the claim.
+\end{itemize}
+\end{proof}
+\end{frame}

@@ -1,0 +1,34 @@
+\section{Learning}
+
+\begin{frame}{Motivation}
+\begin{itemize}
+    \item \underline{Until now:} Given $\tilde{\Pb}_\Phi$, do something with it. i.e.\ find out conditional independence, marginal inference, MAP-inference.
+    \pause \item \underline{Now:} Given samples $X^1, \ldots, X^m \sim \Pb_{\Phi}$ given, compute $\tilde{\Pb}_\Phi$.
+    \pause \item \underline{Problem:} What should the learned model $\tilde{\Pb}_\Phi$ aim for?
+    \begin{itemize}
+        \pause \item \underline{Density estimation:} Find $\tilde{\Pb}_\Phi$ that has high probability for the sampled $X^i$. 
+        \begin{itemize}
+            \pause \item Our aim is to model the distribution of $X$.
+            \pause \item Suitable for training generative models. 
+            \pause \item Gives model that we can sample from.
+        \end{itemize}
+        \pause \item \underline{Prediction Task Learning:} Find $\Pb_{\Phi}[Y | X]$ that has high probability for the sampled $(X^i,Y^i)$.
+        \begin{itemize}
+            \pause \item Our aim is to predict $Y$ given $X$.
+            \pause \item Suitable for training discriminative models.
+            \pause \item Gives model that we can use for prediction: E.g.\ $Y$ is a classifiation variables ($Y \in \{\text{class } 1, \ldots, \text{class } k\}$), $X$ is input data, e.g. images, text, language, $\ldots$.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Density Estimation}
+\begin{itemize}
+    \item Exact formulation of density estimation: Compute $\tilde{\Pb}_\Phi$ that is close to the true distribution.
+    \item Consider for this
+    \begin{equation}
+        \min_{\Phi} D(P^* || \tilde{\Pb}_\Phi) = \E_{\xi \sim \Pb^*}[\log(\frac{\Pb^*}{\Pb_{\Phi}})]\,,
+    \end{equation}
+\end{itemize}
+
+\end{frame}

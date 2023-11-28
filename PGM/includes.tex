@@ -1,0 +1,105 @@
+% packages
+\usepackage[boxed, noline, boxruled, noend]{algorithm2e}
+%\RestyleAlgo{ruled}
+\SetKwInput{KwInput}{Input}
+\SetKwInput{KwOutput}{Output}
+\DontPrintSemicolon
+\usepackage{tcolorbox}
+\usepackage[ansinew]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{verbatim}
+\usepackage{subfig}
+\usepackage{ragged2e}
+\usepackage{array}
+\usepackage{hhline}
+\usepackage{units}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{bm}
+\usepackage{animate}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks,linkcolor=,urlcolor=links}
+\usepackage[font=small,justification=centering]{caption}
+\usepackage{enumitem}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usetikzlibrary{shapes}
+\usetikzlibrary{calc}
+\usepackage{ifthen}
+%\usepackage{subfig}
+\usepackage{subcaption}
+\usepackage{numerica}
+
+
+
+% Commands
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+
+% Math short commands
+%\newcommand{\E}[1]{\mathbb{E}\left[#1\right]} %Expected value
+%\newcommand\gauss[2]{1/(#2*sqrt(2*pi))*exp(-((x-#1)^2)/(2*#2^2))} % Gauss function, parameters mu and sigma
+%\newcommand\gauss[2]{1/(#2*sqrt(2*pi))*exp(-((x-#1)^2)/(2*#2^2))} % Gauss function, parameters mu and sigma
+\pgfmathdeclarefunction{gauss}{2}{%
+  \pgfmathparse{1/(#2*sqrt(2*pi))*exp(-((x-#1)^2)/(2*#2^2))}%
+}
+
+\newcommand{\E}[1][]{%
+\ifthenelse{\equal{#1}{}}{\mathbb{E}}{\mathbb{P}\left[{#1}\right]}%
+}
+\newcommand{\R}{\mathbb{R}} 
+\newcommand{\N}{\mathbb{N}} 
+\newcommand{\Z}{\mathbb{Z}} 
+\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]} %Variance value
+\newcommand{\Cov}[1]{\mathrm{Cov}\left[#1\right]} %Variance value
+\newcommand{\El}[2]{\mathbb{E}_{#2}\left[#1\right]} %Expected value with lower index
+%\newcommand{\Pb}[1]{\mathbb{P}\left[{#1}\right]} %Probability
+%Probability
+\newcommand{\Scope}[1][]{%
+\ifthenelse{\equal{#1}{}}{\text{Scope}}{\text{Scope}\left[{#1}\right]}%
+}
+\newcommand{\Pb}[1][]{%
+\ifthenelse{\equal{#1}{}}{\mathbb{P}}{\mathbb{P}\left[{#1}\right]}%
+}
+\newcommand{\Pa}[2]{\text{Pa}^{#1}_{#2}} %Parents
+\newcommand{\Ch}[2]{\text{Ch}^{#1}_{#2}} %Children
+\newcommand{\Desc}[2][]{%
+\ifthenelse{\equal{#2}{}}{\text{Desc}^{#1}}{\text{Desc}^{#1}_{#2}}%
+}
+\newcommand{\Anc}{\text{Anc}}
+\newcommand{\Mor}{\mathcal{M}}
+\newcommand{\Nb}{\text{Nb}}
+\newcommand{\ND}[2]{\text{NonDesc}^{#1}_{#2}} %Non-descendants
+\newcommand{\maxmarg}{\text{MaxMarg}}
+\newcommand{\Val}{\text{Val}}
+\newcommand{\T}{^{\mkern-1.5mu\mathsf{T}}} %Transpose
+\DeclareMathOperator*{\argmax}{arg\,max} % arg max
+\DeclareMathOperator*{\argmin}{arg\,min} % arg min
+\newcommand{\abs}[1]{|#1|}
+\newcommand{\norm}[1]{||#1||}
+\newcommand{\MB}{\text{MB}}
+\newcommand{\indep}{\bot}
+\newcommand{\Indep}{\mathcal{I}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+
+\newcommand{\var}{\text{var}}
+\newcommand{\idx}{\text{idx}}
+
+% tikz styles
+\tikzset{ rand_var/.style = {rectangle, rounded corners, draw, align=center} }
+\tikzset{ factor_var/.style = {rectangle, draw} }
+\tikzset{ every edge/.style = {very thick} }

@@ -1,0 +1,443 @@
+\section{Sampling}
+
+\begin{frame}{Sampling-Based Inference: Motivation}
+\textbf{Until now:} Marginalization $\rightarrow$ Variable Elimination $\rightarrow$ Message Passing (clique tree SP, BP, Mean-Field, EP).
+\begin{itemize}
+    \pause \item \underline{Technique:} Variational methods, factor manipulation of $\Pb_{\Phi}$.
+    \pause \item \underline{Advantage:} Exact in some cases, fast in general when using approximation, preferred in practice.
+    \pause \item \underline{Disadvantage:} For larger tree-width only approximate solutions possible.
+\end{itemize}
+\pause
+\hrule
+\textbf{Next:} Sample ``particles'', i.e.\ assignments, according to $\Pb_{\Phi}$, count how often certain states are visited $\rightarrow$ approximate marginals.
+\\
+\pause
+\begin{itemize}
+    \item \underline{Technique:} 
+Let $X^t \sim \Pb$ be iid samples from $\Pb$. Then
+\begin{equation}
+    \lim_{T \rightarrow \infty} \frac{1}{T} \sum_{i=1}^T  1_{\mathcal{X}_i = x_i}  = \Pb[X_i = x_i]\,.
+\end{equation}
+    \pause \item \underline{Convergence:} \pause Law of large numbers.
+    \pause \item \underline{Name:} Also called Particle-based inference.
+    \pause \item \underline{Advantage:} Exact in the limit.
+    \pause \item \underline{Disadvantage:} Can be slow to converge.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Trivial Sampling Results: Forward Sampling in Bayesian Networks \& Rejection Sampling}
+\begin{itemize}
+    \item \underline{Idea:} Sample root, \pause sample children of root conditioned on root sample, \pause then sample children of children conditioned on children, etc.
+\end{itemize}
+\pause
+\begin{algorithm}[H]
+\caption{Forward Sampling in a Bayesian Network}
+\label{alg:forward-sampling-bayesian-network}
+\KwInput{Bayesian Network $\mathcal{B}$}
+Let $X_1,\ldots,X_n$ be topological ordering\;
+\pause
+\For{$i=1,\ldots,n$}{
+    $x_i \sim \Pb[X_i | X_{\Pa{\mathcal{B}}{X_i}} = x_{\Pa{\mathcal{B}}{X_i}}]$\;
+}
+\pause
+return $(x_1,\ldots,x_n)$\;
+\end{algorithm}
+
+\pause
+
+\textbf{Conditional Queries:}
+%\end{frame}
+
+%\begin{frame}{Conditional Queries}
+    \begin{itemize}
+    \item \underline{Task:} Compute $\Pb[Y | E = e]$ for some variables $Y \subseteq \mathcal{X}$ and evidence $E = e$.
+    \end{itemize}
+    \pause
+    \textbf{Rejection Sampling:}
+    \begin{itemize}
+    \item \underline{Idea:}  Sample $X \sim \Pb$ and reject if $X_E \neq e$.
+    \pause \item \underline{Problem:} Can be very inefficient if $\Pb[X_E = e]$ is small.
+    \begin{itemize}
+        \pause \item If $\Pb[E = e] = 0.001$, then we need to sample $1000$ times on average to get one sample with $X_E = e$.
+        \pause \item Low evidence is not uncommon.
+    \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Unnormalized Importance Sampling}
+    \textbf{Idea:}
+\begin{itemize}
+\item Recall \underline{Unweighted Sampling:} \ \ 
+$\E_{\Pb}[f(X)] \approx \frac{1}{M} \sum_{m=1}^M f(X^m), \quad X^m \sim \Pb\,.$
+\begin{itemize}
+    \pause\item Target distribution $=$ sampling distribution, all samples have same weight $1/M$.
+\end{itemize}
+\end{itemize}
+\pause
+\begin{definition}[Unnormalized Importance Sampling (a.k.a.\ unweighted importance sampling)]
+   Given a target distribution $\Pb$ and a sampling distribution $Q$, the unnormalized importance sampler is 
+\begin{equation}
+%\E_{\Pb}[f(X)] = \E_{Q}[f(X) \frac{\Pb[X]}{Q[X]}] \approx 
+\frac{1}{M} \sum_{m=1}^M f(X^m) \frac{\Pb[X^m]}{Q[X^m]}, \quad X^m \sim Q[X]\,.
+\end{equation}
+\end{definition}
+\pause
+\begin{proposition}[Unnormalized Importance Sampling is Unbiased]
+    For $X^m \sim Q[X]$, $m=1,\ldots,M$ iid we have
+    %\begin{equation}
+    $\E_{Q}[\frac{1}{M} \sum_{m=1}^M f(X^m) \frac{\Pb[X^m]}{Q[X^m]}] = \E_{\Pb}[f(X)]\,.$
+    %\end{equation}
+\end{proposition}
+\pause
+\begin{proof}
+    Let $M=1$ and $X^1 \sim Q[X]$.
+    \pause
+    $\E_{Q}[ f(X^1) \frac{\Pb[X^1]}{Q[X^1]}] 
+    \pause = \sum_{x} Q[x] f(x) \frac{\Pb[x]}{Q[x]} 
+    \pause = \sum_x f(x) \Pb[x] = \E_{\Pb}[f(X)]$.\\
+    \pause
+    The proof for $M > 1$ follows by linearity.
+\end{proof}
+\begin{corollary}
+The unnormalized importance sampler converges almost surely to $\E_{\Pb}[f(X)]$.
+\end{corollary}
+Bayesian Network
+\end{frame}
+
+\begin{frame}{Unnormalized Importance Sampling: Bayesian Network Likelihood Weighting}
+\begin{itemize}
+    \item \underline{Task:} Apply unnormalized importance Sampling to BNs. How to choose $Q$?
+    \begin{itemize}
+        \pause \item \underline{Sampling distribution $Q$:} Sample $X \sim \Pb$ and set afterwards $X_E = e$.
+        \pause \item \underline{Weights $w$:} $w = \prod_{i \in E} \Pb[e_i | X_{\Pa{\mathcal{B}}{X_i}} = x_{\Pa{\mathcal{B}}{X_i}}]$. Note that $Q$ is deterministic for all entries in $E$!
+    \end{itemize}
+\end{itemize}
+\pause
+\begin{algorithm}[H]
+    \caption{Likelihood Weighted Sampling in a Bayesian Network}
+    \label{alh:likelihood-weighted-sampling-bayesian-network}
+    \KwInput{Bayesian Network $\mathcal{B}$, evidence $E = e$}
+    Let $X_1,\ldots,X_n$ be a topological ordering\;
+    $w = 1$\;
+    \pause
+    \For{$i=1,\ldots,n$}{
+        \If{$X_i \notin E$}{
+            $x_i \sim \Pb[X_i | X_{\Pa{\mathcal{B}}{X_i}} = x_{\Pa{\mathcal{B}}{X_i}}]$\;
+        }
+        \pause
+        \Else{
+            $x_i = e_i$\;
+            $w = w \cdot \Pb[x_i | X_{\Pa{\mathcal{B}}{X_i}} = x_{\Pa{\mathcal{B}}{X_i}}]$\;
+        }
+    }
+\end{algorithm}
+\begin{itemize}
+    \pause \item \underline{Estimator:} $\Pb[Y = y | E = e] \approx \sum_{m=1}^M w_m 1_{(x_m)_Y = y}$.
+    \pause \item \underline{Correctness:} We will below show that Algorithm~\ref{alg:likelihood-weighted-sampling-bayesian-network} is an unnormalized importance sampler.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Normalized Importance Sampling For Likehihood Weighted BNs}
+\begin{itemize}
+\item Interpret likehood weighted sampling as unnormalized importance sampling.
+\end{itemize}
+\pause
+\begin{definition}[Mutilated Network]
+    Let $\mathcal{B}$ be a Bayesian network, $E_1 = e_1,\ldots, E_k = e_k$ the evidence abbreviated as $E = e$. The multilated network $\mathcal{B}_{E=e}$ is 
+    \begin{itemize}
+        \pause \item Remove for nodes $E_i$ the arcs to parents. Set $\Pb[X_i = e_i] = 1$. 
+        \pause \item All other arcs and conditional probability distributions are unchanged.
+    \end{itemize}
+\end{definition}
+\pause
+\begin{itemize}
+    \item As can be seen in Algorithm~\ref{alg:forward-sampling-bayesian-network} we sample from the mutilated network.
+\end{itemize}
+\pause
+\begin{proposition}
+    Let $x$ be a sample generated by Algorithm~\ref{alg:forward-sampling-bayesian-network} and $w$ be its weight. Then the distribution of $x$ is the one defined by $\mathcal{B}_{E=e}$ and $w(x) = \frac{\Pb_{\mathcal{B}}[x]}{\Pb_{\mathcal{B}_{E = e}}[x]}$.
+\end{proposition}
+\pause
+\begin{proof}
+Exercise.
+\end{proof}
+\end{frame}
+
+\begin{frame}{Normalized Importance Sampling}
+\begin{itemize}
+    \item \underline{Problem:} We must be able to evaluate $\Pb$ for unnormalized importance sampling.
+    \begin{itemize}
+        \item In general, this is not possible, e.g.\ we might not know $Z$ for the Gibbs distribution.
+    \end{itemize}
+\item \underline{Solution:} Add additional normalization.
+\end{itemize}
+\pause
+\begin{definition}[Normalized Importance Sampling]
+   Given a target distribution $\Pb$ and a sampling distribution $Q$, the normalized importance sampler is 
+   \begin{equation}
+\frac{\sum_{m=1}^M f(x_m) w(x^m)}{\sum_{m=1}^M w(x^m)}, \quad w(x^m) = \frac{\tilde{\Pb}[x_m]}{Q[x_m]}, \quad X^m \sim Q[X]\,.
+   \end{equation}
+\end{definition}
+\pause
+\begin{proposition}
+    The normalized importance sampler converges almost surely, i.e.
+    \begin{equation}
+\E_{Q}[\frac{\sum_{m=1}^M f(x_m) w_m}{\sum_{m=1}^M w(x^m)}] \rightarrow \E_{\Pb}[f(X)],\quad M \rightarrow \infty\,.
+    \end{equation}
+\end{proposition}
+\pause
+\begin{remark}
+The unnormalized importance sampler is biased, e.g.\ for $M = 1$ we get
+    $\frac{f(X^1) w(X^1)}{w(X^1)} = f(X^1)\,.$
+But since $X^1 \sim Q[X]$, the expectation is $\E_{Q}[f(X)] \neq \E_{\Pb}[f(X)]$.
+\end{remark}
+\end{frame}
+
+\begin{frame}{Normalized Importance Sampling, Convergence Proof}
+\begin{proof}
+Recall the weights as $w(X) = \frac{\tilde{\Pb}[x]}{Q[X]}$.
+\pause
+Then 
+\begin{equation}
+    \E_{Q}[w(X)] 
+    \pause = \sum_x Q[x] \frac{\tilde{\Pb}[x]}{Q[X]} 
+    \pause = \sum_x \tilde{\Pb}[x] 
+    \pause = Z\,.
+\end{equation}
+\pause
+This leads to
+\begin{equation}
+    \begin{aligned}
+\E_{\Pb}[f(X)] 
+\pause = & \sum_x \Pb[x] f(x) 
+\pause = \sum_x Q[x] f(x) \frac{\Pb[x]}{Q[x]} 
+\pause = \frac{1}{Z} \sum_x Q[x] f(x)  \frac{\tilde{\Pb}[x]}{Q[x]} \\
+\pause = & \frac{1}{Z} \E_{Q}[f(X) w(X)] 
+\pause = \frac{\E_Q[f(X) w(X)]}{\E_Q[w(X)]}\,.
+    \end{aligned}
+\end{equation}
+\pause
+Since $\sum_{m=1}^M f(X^m) w(X^M)$ converges almost surely to $\E_Q[f(X) w(X)]$ and $\sum_{m=1}^M w(X^m)$ converges almost surely to $\E_Q[w(X)] = Z$, the normalized importance sampler converges almost surely to $\E_{\Pb}[f(X)]$.
+\end{proof}
+\end{frame}
+
+
+\begin{frame}{Markov Chain Monte Carlo}
+    \textbf{Until now:}
+\begin{itemize}
+    \item \underline{Forward Sampling:} Construct sample one-by-one.
+    \begin{itemize}
+        \pause \item Applicable to Bayesian networks.
+    \end{itemize}
+\end{itemize}
+\pause
+\textbf{Next:}
+\begin{itemize}
+    \item \underline{MCMC:} Generate sequence of samples, each sample depends on previous one. 
+    \begin{itemize}
+        \pause \item First sample might not be on-distribution.
+        \pause \item Subsequent samples come closer to on-distribution.
+        \pause \item Can be applied to Markov networks.
+    \end{itemize}
+    \pause \item \underline{Gibbs sampling:} Simple case of MCMC.
+    \begin{itemize}
+        \pause \item Fix generated sample by resampling variable subset
+    \end{itemize}
+\end{itemize}
+
+\pause
+\begin{algorithm}[H]
+    \caption{Gibbs Sampling}
+    \label{alg:gibbs-sampling}
+    \KwInput{
+        variables $X$ to be sampled,
+        set of factors $\Phi$,
+        initial state distribution $\Pb^0$,
+        number of timesteps $T$
+        }
+        \pause
+    Sample $x^0 \sim \Pb^0$\;
+    \For{$t=1,\ldots,T$}{
+        $x^t \leftarrow x^{t-1}$\;
+        \pause
+        \For{$i=1,\ldots,n$}{
+            \tcp{Change $x_i^t$}
+            $x_i^{(t)} \sim \Pb_{\Phi}[X_i | x_{\{1,\ldots,n\} \backslash \{i\}}]$\;
+        }
+    }
+    \pause
+    return $x^0,\ldots,x^T$\;
+\end{algorithm}
+\pause
+\begin{itemize}
+    \item We will develop the theory behind Gibbs sampling and interpret Gibbs sampling as MCMC.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Markov Chains}
+\begin{definition}[Markov Chain, Transition Model]
+   A Markov chain is defined via a state space $Val(X)$ and a transition model $\mathcal{T}(x \rightarrow x')$ for any pair of states $x,x' \in Val(X)$.
+   For each $x \in Val(X)$ the transition model $\mathcal{T}(x \rightarrow \cdot)$ leads to a probability distribution over $Val(X)$.
+\end{definition}
+\pause
+\begin{itemize}
+    \item The Markov chain trajectory is given by applying the transition model repeatedy.
+\end{itemize}
+\pause
+\begin{algorithm}[H]
+    \caption{MCMC-Sample}
+    \label{alg:mcmc-sample}
+    \KwInput{
+        initial state distribution $\Pb^0$,
+        transition model $\mathcal{T}$,
+        number of steps $T$
+    }
+    \pause
+    Sample $x^0 \sim \Pb^0$\;
+    \pause
+    \For{$t=1,\ldots,T$}{
+        Sample $x^t \sim \mathcal{T}(x^{t-1} \rightarrow \cdot)$\;
+    }
+    \pause
+    return $x^0,\ldots,x^T$\;
+\end{algorithm}
+\pause
+\begin{definition}[Chain Dynamics]
+    Given an initial state distribution $\Pb^0$, applying the transition model $t$ times gives the chain dynamics
+    \begin{equation}
+        \Pb^{t+1}[X^{t+1} = x'] = \sum_{x} \Pb^t[X^t = x] \mathcal{T}(x \rightarrow x')\,.
+    \end{equation}
+\end{definition}
+\pause
+\begin{itemize}
+    \item What is the long-term behaviour of chain dynamics?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Stationary Distribution}
+\begin{itemize}
+    \item \underline{Problem:} Does $\Pb^t$ converge to some distribution?
+\end{itemize}
+\pause
+\begin{definition}[Stationary Distribution]
+   A distribution $\pi[X]$ is a stationary distribution (also called invariant distribution) for a Markov Chain $\mathcal{T}$ if 
+   \begin{equation}
+    \pi[X = x'] = \sum_{x} \pi[X = x] \mathcal{T}(x \rightarrow x')\,.
+   \end{equation}
+\end{definition}
+\begin{itemize}
+    \pause \item In general there is no guarantee that Algorithm~\ref{alg:mcmc-sample} converges to a stationary distribution.
+\end{itemize}
+\pause
+\begin{example}
+    Consider $Val(X) = \{0,1\}$ and the transition model 
+    \begin{equation}
+      \mathcal{T}(x \rightarrow x') = \begin{cases} 1, & x' = 1-x \\ 0, & x' = x \end{cases}\,.
+    \end{equation}
+    Then $\Pb^t = \Pb^0$ if $t$ is even and $\Pb^t[x] = \Pb^0[x-1]$ if $t$ is odd.
+\end{example}
+\begin{itemize}
+\pause \item Another problem arises if the stationary distribution is not unique but depends on $\Pb^0$.
+\begin{itemize}
+    \pause \item Imagine multiple subsets of variables such that the transition model $\mathcal{T}$ has zero transition probability between them.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Regular Markov Chains}
+    \begin{definition}[Regular Markov Chains]
+        A Markov chain is said to be regular (also called ergodic) if there exists $k>0$ such that for every pair $x,x' \in Val(X)$ it holds that $\Pb^k[X = x'] > 0$ when $\Pb^0[X = x] = 1$.
+        \\ \pause
+        In other words, the probability of getting from $x$ to $x'$ in exactly $k$ steps is positive for any pair $x,x \in Val(X)$.
+    \end{definition}
+    \pause
+    \begin{theorem}[Regular Finite Markov Chain Mixes]
+        If a finite Markov chain $\mathcal{T}$ is regular, then it has a unique stationary distribution $\pi$ and $\lim_{t \rightarrow \infty} \Pb^k = \pi$ for any $\Pb^0$.
+    \end{theorem}
+    \pause
+    \begin{proof}
+        \textbf{Preliminaries:} We will translate the problem in linear-algebraic terms.
+        Let $Val(X) =  \{x_1,\ldots,x_n\}$.
+        \begin{itemize}
+            \pause \item Any distribution $\Pb$ over $Val(X)$ can be written as a positive vector $\Pb \in \R^n$ that sums to one.
+            \pause \item The transition model $\mathcal{T}$ can be equivalently written as a matrix $\mathcal{T} \in \R^{n \times n}$ with $\mathcal{T}_{ij} = \mathcal{T}(x_i \rightarrow x_j)$.
+            \pause \item The chain dynamics can be rewritten as as matrix-vector multiplication $\Pb^{t} = (\Pb^0)^\top \mathcal{T}^t$.
+            \pause \item The theorem then can be equivalently restated as existence of a unique $\pi \in \R^n_+$, $\la 1, \pi \ra =1$ such that $(\Pb^0)^\top \mathcal{T}^t  \rightarrow \pi^\top$ for any $\Pb^0$ and $t \rightarrow \infty$.
+            \pause \item Regularity is equivalent to $\mathcal{T}^k > 0$.
+        \end{itemize}
+    \end{proof}
+\end{frame}
+
+\begin{frame}{Markov Chain Mixing, Proof Cont.}
+    \begin{proof}
+        \textbf{Claim:} We will prove that $\nu \mapsto \nu \mathcal{T}^k$ is a contraction w.r.t.\ the $L_1$-norm, i.e. there exists $\alpha \in [0,1)$
+        \begin{equation}
+           \norm{\nu^{\top} \mathcal{T}^k - \mu^{\top} \mathcal{T}^k}_1 \leq \alpha \norm{\nu - \mu}_1\,.
+        \end{equation}
+        \pause
+        \textbf{Construction of $Q$:}
+        There exists an $\epsilon > 0$ with $\mathcal{T}^k_{ij} \geq \epsilon$ for all $i,j$.
+        \pause
+        Choose $\epsilon$ small enough so that $n \cdot \epsilon < 1$.
+        Define $Q_{ij} = \frac{\mathcal{T}^k_{ij} - \epsilon}{1 - n \cdot \epsilon}$.
+        \pause
+        Then $Q$ is a stochastic matrix, i.e.\ $Q_{ij} \geq 0$ and $\sum_j Q_{ij} = 1$. 
+        \pause
+        The first condition is satisfied by construction.
+        \pause The second one is satisfied since
+        \begin{equation}
+            \sum_j Q_{ij} \pause = \frac{\sum_j \mathcal{T}^k_{ij} - \sum_j \epsilon}{1 - n \cdot \epsilon} \pause = \frac{1 - n \cdot \epsilon}{1 - n \cdot \epsilon} = 1\,.
+        \end{equation}
+    \pause
+    Observe that $\mathcal{T}^k = (1-n \cdot \epsilon) Q + \epsilon 1_{n \times n}$.
+    \end{proof}
+    \end{frame}
+    \begin{frame}{Proof cont. II}
+        \begin{proof}
+    \textbf{Contraction:}
+    \begin{equation}
+        \begin{aligned}
+            \norm{\nu^{\top} \mathcal{T}^k - \mu^{\top} \mathcal{T}^k}_1 
+            \pause = &  \sum_j \abs{(\nu^\top \mathcal{T}^k)_j - (\mu^\top \mathcal{T}^k)_j} \\
+            \pause = & \sum_j \abs{\sum_i (\nu^\top_i \mathcal{T}^k_{ij} - \mu^\top_i \mathcal{T}^k_{ij})} \\
+            \pause = & \sum_j \abs{\sum_i(\nu_i - \mu_i) Q_{ij}/(1-n\cdot \epsilon)} 
+       \end{aligned}
+    \end{equation}
+    \pause
+    Multiply by $1-n\cdot\epsilon$.
+    \begin{equation}
+        \begin{aligned}
+        \sum_j \abs{\sum_i(\nu_i - \mu_i) Q_{ij}} 
+        \pause \leq & \sum_j \sum_i\abs{(\nu_i - \mu_i) Q_{ij}} \\
+        \pause = & \sum_i \abs{(\nu_i - \mu_i)} \sum_j Q_{ij} \\
+        \pause = & \sum_i \abs{(\nu_i - \mu_i)} \\
+        \pause = & \norm{\nu - \mu}_1\,.
+        \end{aligned}
+    \end{equation}
+    \pause Hence, $\norm{\nu^{\top} \mathcal{T}^k - \mu^{\top} \mathcal{T}^k}_1 \leq (1-n\epsilon) \norm{\nu - \mu}_1$.
+    \pause Now apply Banach's fixed point theorem.
+    \end{proof}
+\end{frame}
+
+\begin{frame}{Discussion}
+    \textbf{Variance of Weighted Sampling:}
+    \begin{itemize}
+        \pause \item The variance of normalized and unnormalized importance sampling is typically larger than when sampling on-distribution.
+        \pause \item What is a good initial distribution?
+        \pause \item How fast is convergence?
+    \end{itemize}
+    \textbf{MCMC:}
+    \begin{itemize}
+        \pause \item Unconditional and conditional samples can be generated using the same algorithm.
+        \begin{itemize}
+            \pause \item Performance does not degrade when adding evidence.
+        \end{itemize}
+        \pause \item How many rounds do we have to do until burn-in (i.e.\ convergence) happens?
+        \pause \item How many rounds between samples for considering them independent?
+    \end{itemize}
+    \pause \textbf{Metropolis Hastings:} Not covered in this lecture.
+    \begin{itemize}
+        \pause \item How to extend MCMC in case we cannot sample according to conditional distribution $\Pb_{\Phi}[X_i | X_{1,\ldots,i-1,i+1,\ldots,n} = x]$?
+    \end{itemize}
+    
+\end{frame}

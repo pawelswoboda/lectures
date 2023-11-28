@@ -1,0 +1,111 @@
+\subsubsection{Excursion: Coding}
+
+\begin{frame}{Excursion: Application to Codes}
+    \begin{itemize}
+        \item Assume we want to send $u_1,\ldots,u_k$ over a channel.
+        \pause \item We encode the message as $x_1,\ldots, x_n$ (see below for possibilities how to do it).
+        \pause \item After sending the encoded message, the receiver obtains $y_1,\ldots,y_n$.
+        \begin{itemize}
+            \pause \item The channel is noisy, and $x_i \neq y_i$ with some probability.
+        \end{itemize}
+        \pause \item One simple way to mitigate corruption: $x_{3 \cdot i} = x_{3 \cdot i + 1} = x_{3 \cdot i + 2} = u_i$ for all $i$.
+        \begin{itemize}
+        \item The receiver can then decode $\hat{u}_i$ as the majority vote over $y_{3\cdot i}$, $y_{3 \cdot i + 1}$ and $y_{3 \cdot i + 2}$.
+        \end{itemize}
+        \pause \item The \underline{bit error rate} is the probability that a bit is decoded incorrectly.
+        \pause \item The \underline{rate of a code} is $k/n$, i.e.\ $1/3$ for the above code.
+        \begin{itemize}
+            \pause \item If the channel corrupts each bit with probability $p$, the bit error rate is $p^3 + 3p^2$ which is smaller than $p$ for $p$ small enough.
+        \end{itemize}
+        \pause \item Can we design better codes with higher rate and lower bit error rate?
+    \end{itemize}
+    \pause
+    \begin{example}[Simple Parity Check Code]
+        \label{example:parity-check-code}
+            \begin{minipage}{0.49\textwidth}
+            \begin{itemize}
+                \item Original message: $u_1,\ldots,u_4$.
+                \pause \item Encoding: 
+                \begin{itemize}
+                    \item $x_i = u_i$ for $i=1,\ldots,4$
+                    \item $x_5 = u_1 + u_2 + u_3 \ mod\ 2$,
+                    \item $x_6 = u_1 + u_2 + u_4 \ mod\ 2$,
+                    \item $x_7 = u_2 + u_3 + u_4 \ mod\ 2$,
+                \end{itemize}
+            \pause \item Decoding?
+            \end{itemize}
+            \end{minipage}
+            \begin{minipage}{0.49\textwidth}
+                \begin{center}
+            \begin{tikzpicture}[scale=0.7]
+                \node[rand_var] at (0,0) (Y1) {$Y_1$};
+                \node[rand_var] at (2,0) (Y2) {$Y_2$};
+                \node[rand_var] at (4,0) (Y3) {$Y_3$};
+                \node[rand_var] at (6,0) (Y4) {$Y_4$};
+                \node[rand_var] at (0,-1) (X1) {$X_1$};
+                \node[rand_var] at (2,-1) (X2) {$X_2$};
+                \node[rand_var] at (4,-1) (X3) {$X_3$};
+                \node[rand_var] at (6,-1) (X4) {$X_4$};
+                \node[rand_var] at (0,-2) (U1) {$U_1$};
+                \node[rand_var] at (2,-2) (U2) {$U_2$};
+                \node[rand_var] at (4,-2) (U3) {$U_3$};
+                \node[rand_var] at (6,-2) (U4) {$U_4$};
+                \node[rand_var] at (1,-3) (X5) {$X_5$};
+                \node[rand_var] at (3,-3) (X6) {$X_6$};
+                \node[rand_var] at (5,-3) (X7) {$X_7$};
+                \node[rand_var] at (1,-4) (Y5) {$Y_5$};
+                \node[rand_var] at (3,-4) (Y6) {$Y_6$};
+                \node[rand_var] at (5,-4) (Y7) {$Y_7$};
+                % edges
+                \draw[->] (X1) to (Y1);
+                \draw[->] (X2) to (Y2);
+                \draw[->] (X3) to (Y3);
+                \draw[->] (X4) to (Y4);
+                \draw[->] (U1) to (X1);
+                \draw[->] (U2) to (X2);
+                \draw[->] (U3) to (X3);
+                \draw[->] (U4) to (X4);
+                \draw[->] (U1) to (X5);
+                \draw[->] (U1) to (X6);
+                \draw[->] (U2) to (X5);
+                \draw[->] (U2) to (X6);
+                \draw[->] (U2) to (X7);
+                \draw[->] (U3) to (X5);
+                \draw[->] (U3) to (X7);
+                \draw[->] (U4) to (X6);
+                \draw[->] (U4) to (X7);
+                \draw[->] (X5) to (Y5);
+                \draw[->] (X6) to (Y6);
+                \draw[->] (X7) to (Y7);
+            \end{tikzpicture}
+        \end{center}
+            \end{minipage}
+        \end{example}
+    \end{frame}
+    
+    \begin{frame}{Excursion: Code Decoding Via Probabilistic Message Decoding}
+        \begin{itemize}
+            \pause \item \underline{Idea:} Reformulate message decoding as probabilistic inference task.
+        \end{itemize}
+        \textbf{Probabilistic Ansatz:}
+        \begin{itemize}
+            \item \underline{Prior} over message bits $U = (U_1,\ldots,U_k)$.
+            \pause \item \underline{Encoder:} Function for converting $U$ to codeword $X = (X_1,\ldots,X_n)$.
+            \pause \item \underline{Corruption:} Stochastic model for channel corruption $Y = (Y_1,\ldots,Y_n)$ given $X$.
+            \pause \item \underline{Decoding:}  Find the most likely joint assignment of $U$ given the observed message bit $Y = y$, i.e.\ 
+            \begin{equation}
+                \argmax_{U} \Pb[U | Y = y]
+            \end{equation}
+        \end{itemize}
+        \pause
+        \hrule
+        \begin{itemize}
+            \item Clique tree message passing Algorithm~\ref{alg:calibration-sum-product-clique-tree} works for simple coding, like in Example~\ref{example:parity-check-code}.
+            \pause \item Not applicable to codes with $n$ big enough and with large tree-width clique trees.
+            \begin{itemize}
+                \pause \item Use belief propagation instead!
+                \pause \item A lot of the impetus on approximate inference came from this application.
+            \end{itemize}
+            \pause \item Nowadays used in hard drives, cellular communication, deep space communication etc.
+        \end{itemize}
+    \end{frame}
